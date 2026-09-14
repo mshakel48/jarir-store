@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Eye, Heart, ShoppingBag } from "lucide-react";
 import { useState } from "react";
 import { Price } from "@/components/price";
+import { DealCountdown, isDealLive } from "@/components/product/deal-offer";
 import { Stars } from "@/components/stars";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ export function ProductCard({ product }: { product: Product }) {
         <div className="absolute start-2.5 top-2.5 flex flex-col gap-1">
           {product.discount ? <Badge>{t("product.off", { n: product.discount })}</Badge> : null}
           {product.newArrival ? <Badge variant="inverse">{t("product.new")}</Badge> : null}
+          {isDealLive(product) ? <Badge variant="warning">{t("product.limited")}</Badge> : null}
         </div>
         <div className="absolute end-2.5 top-2.5 flex flex-col gap-1.5">
           <button
@@ -74,6 +76,9 @@ export function ProductCard({ product }: { product: Product }) {
           <span className="text-xs tabular-nums text-muted-foreground">({product.reviewCount})</span>
         </div>
         <Price price={product.price} oldPrice={product.oldPrice} discount={product.discount} size="sm" />
+        {isDealLive(product) && product.dealEndsAt ? (
+          <DealCountdown endAt={product.dealEndsAt} compact />
+        ) : null}
         <p className="text-xs text-muted-foreground">
           {out ? t("product.outOfStock") : product.stock < 8 ? t("product.left", { n: product.stock }) : t("product.inStock")}
         </p>

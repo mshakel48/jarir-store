@@ -3,6 +3,7 @@ import { Receipt, RotateCcw, ShieldCheck, Truck } from "lucide-react";
 import { CategoryPills } from "@/components/home/category-pills";
 import { ProductRail } from "@/components/product/product-rail";
 import { ProductCard } from "@/components/product/product-card";
+import { DealCountdown } from "@/components/product/deal-offer";
 import { Button } from "@/components/ui/button";
 import { HOME_CATEGORIES } from "@/lib/data/categories";
 import { uniqueBrandPairs } from "@/lib/data/catalog";
@@ -33,8 +34,7 @@ function HomePage() {
   const end = hydrated ? getDealEnd() : Date.now() + 8 * 3600_000;
   const cd = useCountdown(end);
   const pad = (n: number) => String(n).padStart(2, "0");
-  const left = getProduct("atomic-habits");
-  const right = getProduct("rich-dad-poor-dad");
+  const deal = getProduct("iphone-18");
   const brands = uniqueBrandPairs().slice(0, 12);
 
   return (
@@ -49,17 +49,36 @@ function HomePage() {
             {t("home.greatPrice")}
           </div>
           <h1 className="text-center text-3xl font-extrabold tracking-tight md:text-5xl">{t("home.promoTitle")}</h1>
-          <div className="mt-8 grid gap-10 md:grid-cols-2">
-            {left ? (
-              <div className="md:border-e md:border-border">
-                <PromoCol product={left} label={t("home.promoQuant")} locale={locale} />
+          {deal ? (
+            <Link
+              to="/products/$id"
+              params={{ id: deal.id }}
+              className="mt-8 mx-auto flex max-w-3xl flex-col items-center gap-5 md:flex-row md:items-center md:justify-center md:gap-10"
+            >
+              <img
+                src={deal.images[0]}
+                alt={locale === "ar" ? deal.arabicName : deal.name}
+                className="h-56 w-56 rounded-2xl object-cover shadow-card md:h-72 md:w-72"
+              />
+              <div className="flex flex-col items-center gap-3 text-center md:items-start md:text-start">
+                <span className="rounded-md bg-muted px-4 py-1.5 text-sm font-semibold">{t("home.promoQuant")}</span>
+                <p className="text-lg font-semibold">{locale === "ar" ? deal.arabicName : deal.name}</p>
+                <p className="flex items-baseline gap-2 font-extrabold">
+                  {deal.oldPrice ? (
+                    <span className="text-xl text-muted-foreground line-through decoration-2">
+                      {formatMoney(deal.oldPrice, locale)}
+                    </span>
+                  ) : null}
+                  <span className="text-4xl text-primary md:text-5xl">{formatMoney(deal.price, locale)}</span>
+                </p>
+                <p className="text-sm text-muted-foreground">{t("home.promoVerbal")}</p>
+                {deal.dealEndsAt ? <DealCountdown endAt={deal.dealEndsAt} /> : null}
               </div>
-            ) : null}
-            {right ? <PromoCol product={right} label={t("home.promoVerbal")} locale={locale} /> : null}
-          </div>
+            </Link>
+          ) : null}
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Button asChild>
-              <Link to="/category/$slug" params={{ slug: "books" }}>
+              <Link to="/products/$id" params={{ id: "iphone-18" }}>
                 {t("home.shopNow")}
               </Link>
             </Button>
@@ -214,33 +233,5 @@ function HomePage() {
         </div>
       </section>
     </div>
-  );
-}
-
-function PromoCol({
-  product,
-  label,
-  locale,
-}: {
-  product: NonNullable<ReturnType<typeof getProduct>>;
-  label: string;
-  locale: "ar" | "en";
-}) {
-  return (
-    <Link to="/products/$id" params={{ id: product.id }} className="flex flex-col items-center gap-3 px-4">
-      <span className="rounded-md bg-muted px-4 py-1.5 text-sm font-semibold">{label}</span>
-      <div className="flex items-end gap-3">
-        <img src={product.images[0]} alt="" className="h-36 w-28 rounded-md object-cover shadow-card md:h-44 md:w-32" />
-        {product.images[1] ? (
-          <img src={product.images[1]} alt="" className="h-32 w-24 rounded-md object-cover shadow-card md:h-40 md:w-28" />
-        ) : null}
-      </div>
-      <p className="flex items-baseline gap-2 font-extrabold">
-        {product.oldPrice ? (
-          <span className="text-xl text-muted-foreground line-through decoration-2">{formatMoney(product.oldPrice, locale)}</span>
-        ) : null}
-        <span className="text-4xl text-primary md:text-5xl">{formatMoney(product.price, locale)}</span>
-      </p>
-    </Link>
   );
 }

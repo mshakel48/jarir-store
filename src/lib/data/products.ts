@@ -1,3 +1,4 @@
+import { IPHONE_18_DEAL_END } from "@/lib/constants";
 import { categoryShot, productImage } from "@/lib/data/images";
 import { discountPercent } from "@/lib/utils";
 import type { Product, Spec } from "@/lib/types";
@@ -394,6 +395,37 @@ export const PRODUCTS: Product[] = [
     sku: "JR-PH-4001",
     featured: true,
     bestSeller: true,
+  }),
+  item({
+    id: "iphone-18",
+    name: "Apple iPhone 18 256GB",
+    arabicName: "أبل آيفون ١٨ ٢٥٦ جيجا",
+    brand: "Apple",
+    arabicBrand: "أبل",
+    category: "mobiles",
+    subcategory: "iPhone",
+    arabicSubcategory: "آيفون",
+    price: 5499,
+    oldPrice: 6499,
+    rating: 4.9,
+    reviewCount: 86,
+    description: "Limited-time launch offer: iPhone 18 256GB in Natural Titanium. A19 Pro, 6.3\" Super Retina XDR, 5x Telephoto. Split into 10 payments with Tabby or Tamara, or pay in full by credit card.",
+    arabicDescription: "عرض إطلاق لفترة محدودة: آيفون ١٨ بسعة ٢٥٦ جيجا بلون تيتانيوم طبيعي. معالج A19 Pro وشاشة ٦٫٣ إنش وزوم ٥x. قسّط على ١٠ دفعات عبر تابي أو تمارا، أو ادفع كاملًا بالبطاقة الائتمانية.",
+    specifications: [
+      spec("Storage", "التخزين", "256 GB"),
+      spec("Display", "الشاشة", "6.3\" Super Retina XDR"),
+      spec("Chip", "المعالج", "A19 Pro"),
+      spec("Camera", "الكاميرا", "48MP + 5x Telephoto", "٤٨ ميجا + زوم ٥x"),
+      spec("Finish", "اللون", "Natural Titanium", "تيتانيوم طبيعي"),
+      spec("Installments", "التقسيط", "10 payments · Tabby / Tamara", "١٠ دفعات · تابي / تمارا"),
+    ],
+    stock: 18,
+    sku: "JR-PH-4018",
+    featured: true,
+    bestSeller: true,
+    newArrival: true,
+    dealEndsAt: IPHONE_18_DEAL_END,
+    installmentParts: 10,
   }),
   item({
     id: "galaxy-s25",

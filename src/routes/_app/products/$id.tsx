@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { EmptyState } from "@/components/empty-state";
 import { Price } from "@/components/price";
+import { BnplOffer } from "@/components/product/deal-offer";
 import { ProductRail } from "@/components/product/product-rail";
 import { Qty } from "@/components/qty";
 import { Stars } from "@/components/stars";
@@ -104,6 +105,7 @@ function ProductPage() {
           <div className="mt-4">
             <Price price={product.price} oldPrice={product.oldPrice} discount={product.discount} size="lg" />
           </div>
+          {product.installmentParts || product.dealEndsAt ? <BnplOffer product={product} /> : null}
           <p className="mt-3 text-sm">
             {out ? (
               <Badge variant="warning">{t("product.outOfStock")}</Badge>

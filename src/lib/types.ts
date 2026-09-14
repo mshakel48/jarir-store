@@ -46,6 +46,8 @@ export interface Product {
   featured?: boolean;
   bestSeller?: boolean;
   newArrival?: boolean;
+  dealEndsAt?: string;
+  installmentParts?: number;
 }
 
 export interface CartItem {

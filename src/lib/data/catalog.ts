@@ -98,7 +98,9 @@ export function boughtTogether(product: Product) {
 }
 
 export function flashDeals() {
-  return PRODUCTS.filter((p) => p.discount >= 10).slice(0, 10);
+  return PRODUCTS.filter((p) => p.discount >= 10)
+    .sort((a, b) => Number(!!b.dealEndsAt) - Number(!!a.dealEndsAt) || b.discount - a.discount)
+    .slice(0, 10);
 }
 
 export function featuredProducts() {

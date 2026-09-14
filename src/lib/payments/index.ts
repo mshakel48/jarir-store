@@ -47,7 +47,7 @@ const TappyProvider: PaymentProvider = {
   id: "tappy",
   async charge() {
     await delay();
-    if (!DEMO_PAYMENTS) return notConfigured("Tappy (TAPPY_API_KEY)");
+    if (!DEMO_PAYMENTS) return notConfigured("Tabby (TABBY_API_KEY)");
     return demoSuccess();
   },
 };
@@ -123,6 +123,7 @@ export const PROVIDER_META: {
   id: PaymentMethodId;
   env: string;
 }[] = [
+  { id: "tappy", env: "TABBY_API_KEY" },
   { id: "tamara", env: "TAMARA_API_KEY" },
   { id: "card", env: "PAYMENT_SECRET" },
 ];

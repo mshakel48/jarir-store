@@ -7,7 +7,7 @@ import { SummaryRows } from "@/components/cart/summary-rows";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DEMO_PAYMENTS, EXPRESS_DELIVERY_FEE, FREE_DELIVERY_MIN } from "@/lib/constants";
+import { DEMO_PAYMENTS, EXPRESS_DELIVERY_FEE, FREE_DELIVERY_MIN, INSTALLMENT_PARTS } from "@/lib/constants";
 import { CITY_IDS } from "@/lib/data/stores";
 import { lineItems } from "@/lib/data/totals";
 import { detectCardBrand, digitsOnly, formatMoney, formatSaudiPhone, isValidEmail, isValidSaudiPhone } from "@/lib/format";
@@ -24,7 +24,7 @@ export const Route = createFileRoute("/_app/checkout/")({
   component: CheckoutPage,
 });
 
-const METHODS: PaymentMethodId[] = ["tamara", "card"];
+const METHODS: PaymentMethodId[] = ["tappy", "tamara", "card"];
 
 function CheckoutPage() {
   const { t, locale, isAr } = useT();
@@ -64,7 +64,7 @@ function CheckoutPage() {
 
   const totals = useCartTotals(method);
   const lines = lineItems(items);
-  const per = installmentAmount(totals.total, 4);
+  const per = installmentAmount(totals.total, INSTALLMENT_PARTS);
   const brand = detectCardBrand(card.number);
 
   const infoOk = addr.fullName.trim().length > 2 && isValidEmail(email) && isValidSaudiPhone(addr.phone);
@@ -279,13 +279,15 @@ function CheckoutPage() {
                 <span className="font-medium">
                   {t(`pay.${id}`)}
                 </span>
-                {id === "tamara" ? (
+                {id === "tappy" || id === "tamara" ? (
                   <p className="mt-1 text-sm text-muted-foreground">{t(`pay.${id}Desc`)}</p>
-                ) : null}
+                ) : (
+                  <p className="mt-1 text-sm text-muted-foreground">{t("product.orCard")}</p>
+                )}
               </label>
             ))}
 
-            {method === "tamara" ? (
+            {method === "tappy" || method === "tamara" ? (
               <div className="rounded-xl border border-border bg-card p-4 text-sm">
                 <p className="font-medium">{t("pay.installments")}</p>
                 <p className="mt-1 text-muted-foreground">
@@ -340,7 +342,7 @@ function CheckoutPage() {
         <SummaryRows totals={totals} locale={locale} t={t} />
         <p className="mt-3 text-xs text-muted-foreground">
           {t("pay.selected")}: {t(`pay.${method}`)}
-          {method === "tamara" ? ` · ${t("pay.per", { n: formatMoney(per, locale) })}` : ""}
+          {method === "tappy" || method === "tamara" ? ` · ${t("pay.per", { n: formatMoney(per, locale) })}` : ""}
         </p>
         <p className="mt-1 text-xs text-muted-foreground">{t("checkout.vatIncluded")}</p>
         <div className="mt-4 lg:hidden">
