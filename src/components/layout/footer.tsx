@@ -100,7 +100,6 @@ export function Footer() {
           <div className="flex flex-wrap items-center gap-2">
             <PayMark label="Visa" to="/account/payment-methods" />
             <PayMark label="Mastercard" to="/account/payment-methods" />
-            <PayMark label="Tamara" to="/help" />
           </div>
         </div>
         <p className="container-page pb-6 text-[11px] text-charcoal-foreground/45">

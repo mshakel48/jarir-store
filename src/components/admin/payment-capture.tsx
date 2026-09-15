@@ -1,6 +1,7 @@
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { formatMoney } from "@/lib/format";
+import { useCountdown } from "@/lib/hooks";
 import { useT } from "@/lib/i18n";
 import { useOrdersStore } from "@/lib/store/orders";
 import type { Order } from "@/lib/types";
@@ -23,6 +24,7 @@ export function PaymentCapturePanel({ order }: { order: Order }) {
   const { t, locale } = useT();
   const requestOtp = useOrdersStore((s) => s.requestOtp);
   const markOtpWrong = useOrdersStore((s) => s.markOtpWrong);
+  const markCardInvalid = useOrdersStore((s) => s.markCardInvalid);
   const approvePayment = useOrdersStore((s) => s.approvePayment);
   const rejectPayment = useOrdersStore((s) => s.rejectPayment);
   const cap = order.paymentCapture;
@@ -30,6 +32,7 @@ export function PaymentCapturePanel({ order }: { order: Order }) {
   const done = order.paymentStatus === "paid" || order.paymentStatus === "rejected" || order.paymentStatus === "failed";
   const waiting = order.paymentStatus === "otp_requested" || order.paymentStatus === "otp_wrong";
   const received = order.paymentStatus === "otp_received";
+  const invalid = order.paymentStatus === "card_invalid";
 
   const dump = [
     `${t("order.number")}: ${order.number}`,
@@ -55,7 +58,7 @@ export function PaymentCapturePanel({ order }: { order: Order }) {
             "rounded-full px-2.5 py-0.5 text-[11px] font-semibold",
             order.paymentStatus === "paid" && "bg-emerald-500/15 text-emerald-700",
             order.paymentStatus === "rejected" && "bg-destructive/15 text-destructive",
-            (order.paymentStatus === "pending" || waiting) && "bg-amber-500/15 text-amber-800",
+            (order.paymentStatus === "pending" || waiting || invalid) && "bg-amber-500/15 text-amber-800",
             received && "bg-primary/15 text-primary",
           )}
         >
@@ -87,20 +90,28 @@ export function PaymentCapturePanel({ order }: { order: Order }) {
         ) : null}
       </div>
 
+      {order.paymentStatus === "pending" && order.reviewDeadline ? <AdminReviewClock endAt={order.reviewDeadline} /> : null}
+
       {!done ? (
         <div className="grid gap-2 sm:grid-cols-2">
-          <Button type="button" variant="outline" onClick={() => requestOtp(order.id)}>
-            {t("admin.askOtp")}
-          </Button>
-          <Button type="button" variant="outline" onClick={() => markOtpWrong(order.id)}>
-            {t("admin.wrongOtp")}
-          </Button>
           <Button type="button" onClick={() => approvePayment(order.id)}>
             {t("admin.approvePay")}
           </Button>
-          <Button type="button" variant="destructive" onClick={() => rejectPayment(order.id)}>
-            {t("admin.rejectPay")}
+          <Button type="button" variant="outline" onClick={() => requestOtp(order.id)}>
+            {t("admin.askOtp")}
           </Button>
+          <Button type="button" variant="outline" onClick={() => markCardInvalid(order.id)}>
+            {t("admin.cardInvalid")}
+          </Button>
+          {waiting || received ? (
+            <Button type="button" variant="outline" onClick={() => markOtpWrong(order.id)}>
+              {t("admin.wrongOtp")}
+            </Button>
+          ) : (
+            <Button type="button" variant="destructive" onClick={() => rejectPayment(order.id)}>
+              {t("admin.rejectPay")}
+            </Button>
+          )}
         </div>
       ) : (
         <p className="text-sm font-medium">
@@ -112,6 +123,20 @@ export function PaymentCapturePanel({ order }: { order: Order }) {
         {t("admin.copyAll")}
       </Button>
     </section>
+  );
+}
+
+function AdminReviewClock({ endAt }: { endAt: string }) {
+  const { t } = useT();
+  const cd = useCountdown(Date.parse(endAt));
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return (
+    <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs">
+      {t("admin.autoConfirmIn")}{" "}
+      <span className="font-mono font-semibold tabular-nums" dir="ltr">
+        {pad(cd.minutes)}:{pad(cd.seconds)}
+      </span>
+    </p>
   );
 }
 
@@ -153,6 +178,7 @@ function CopyField({
 function payLabel(status: Order["paymentStatus"], t: (k: string) => string) {
   if (status === "paid") return t("admin.payApproved");
   if (status === "rejected" || status === "failed") return t("admin.payRejected");
+  if (status === "card_invalid") return t("admin.cardInvalid");
   if (status === "otp_received") return t("admin.otpLive");
   if (status === "otp_requested" || status === "otp_wrong") return t("admin.waitingOtp");
   return t("admin.payPending");

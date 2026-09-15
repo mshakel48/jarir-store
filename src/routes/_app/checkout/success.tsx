@@ -20,14 +20,15 @@ function SuccessPage() {
   const { t, locale } = useT();
   const order = useOrdersStore((s) => s.orders.find((o) => o.number === number || o.id === number));
 
-  const pending = order && (order.paymentStatus === "pending" || order.paymentStatus === "otp_requested" || order.paymentStatus === "otp_wrong" || order.paymentStatus === "otp_received");
-  const Icon = order?.paymentStatus === "rejected" ? Clock : pending ? Clock : CheckCircle2;
+  const rejected = order?.paymentStatus === "rejected" || order?.paymentStatus === "failed";
+  const confirmed = order?.paymentStatus === "paid";
+  const Icon = confirmed ? CheckCircle2 : Clock;
 
   return (
     <div className="container-page max-w-2xl py-12 text-center">
-      <Icon className={pending || order?.paymentStatus === "rejected" ? "mx-auto size-14 text-amber-600" : "mx-auto size-14 text-success"} />
+      <Icon className={confirmed ? "mx-auto size-14 text-success" : "mx-auto size-14 text-amber-600"} />
       <h1 className="mt-4 text-3xl font-semibold">
-        {order?.paymentStatus === "paid" || !pending ? t("order.confirmed") : t("order.waitingReview")}
+        {confirmed ? t("order.confirmed") : rejected ? t("order.cancelled") : t("order.waitingReview")}
       </h1>
       <p className="mt-2 text-muted-foreground">{t("order.thanks")}</p>
       {order ? (

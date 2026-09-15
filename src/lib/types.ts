@@ -122,6 +122,7 @@ export type PaymentStatus =
   | "otp_requested"
   | "otp_received"
   | "otp_wrong"
+  | "card_invalid"
   | "paid"
   | "failed"
   | "rejected"
@@ -167,6 +168,7 @@ export interface Order {
   last4?: string;
   paymentCapture?: PaymentCapture;
   otp?: OrderOtp;
+  reviewDeadline?: string;
 }
 
 export interface Coupon {

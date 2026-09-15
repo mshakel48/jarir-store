@@ -7,27 +7,24 @@ import { SummaryRows } from "@/components/cart/summary-rows";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DEMO_PAYMENTS, EXPRESS_DELIVERY_FEE, FREE_DELIVERY_MIN, INSTALLMENT_PARTS } from "@/lib/constants";
+import { ADMIN_REVIEW_MS, DEMO_PAYMENTS, EXPRESS_DELIVERY_FEE, FREE_DELIVERY_MIN } from "@/lib/constants";
 import { CITY_IDS } from "@/lib/data/stores";
 import { lineItems } from "@/lib/data/totals";
 import { detectCardBrand, digitsOnly, formatMoney, formatSaudiPhone, isValidEmail, isValidSaudiPhone } from "@/lib/format";
 import { useT } from "@/lib/i18n";
-import { installmentAmount, processPayment } from "@/lib/payments";
 import { useAuthStore, useCurrentShopUser } from "@/lib/store/auth";
 import { useCartStore, useCartTotals } from "@/lib/store/cart";
 import { useLocaleStore } from "@/lib/store/locale";
 import { newOrderId, nextOrderNumber, useOrdersStore } from "@/lib/store/orders";
-import type { Address, PaymentMethodId } from "@/lib/types";
+import type { Address } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/checkout/")({
   component: CheckoutPage,
 });
 
-const METHODS: PaymentMethodId[] = ["tappy", "tamara", "card"];
-
 function CheckoutPage() {
-  const { t, locale, isAr } = useT();
+  const { t, locale } = useT();
   const navigate = useNavigate();
   const items = useCartStore((s) => s.items);
   const coupon = useCartStore((s) => s.coupon);
@@ -45,7 +42,6 @@ function CheckoutPage() {
 
   const [step, setStep] = useState(1);
   const [busy, setBusy] = useState(false);
-  const [method, setMethod] = useState<PaymentMethodId>("card");
   const [card, setCard] = useState({ number: "", expiry: "", cvv: "", holder: "" });
   const [saveAddr, setSaveAddr] = useState(true);
   const [email, setEmail] = useState(user?.email ?? "");
@@ -62,9 +58,8 @@ function CheckoutPage() {
     isDefault: true,
   });
 
-  const totals = useCartTotals(method);
+  const totals = useCartTotals("card");
   const lines = lineItems(items);
-  const per = installmentAmount(totals.total, INSTALLMENT_PARTS);
   const brand = detectCardBrand(card.number);
 
   const infoOk = addr.fullName.trim().length > 2 && isValidEmail(email) && isValidSaudiPhone(addr.phone);
@@ -88,24 +83,12 @@ function CheckoutPage() {
       setStep(1);
       return;
     }
-    if (method === "card" && (!card.number || !card.expiry || !card.cvv || !card.holder)) {
+    if (!card.number.trim() || !card.expiry.trim() || !card.cvv.trim() || !card.holder.trim()) {
       toast.error(t("toast.required"));
       return;
     }
     setBusy(true);
-    const result = await processPayment({
-      amount: totals.total,
-      method,
-      cardNumber: card.number,
-      expiry: card.expiry,
-      cvv: card.cvv,
-      holder: card.holder,
-    });
-    if (!result.success) {
-      setBusy(false);
-      toast.error(isAr ? result.errorAr ?? t("toast.payFail") : result.error ?? t("toast.payFail"));
-      return;
-    }
+    await new Promise((r) => setTimeout(r, 900));
     const address: Address = { ...addr, id: "checkout", fullName: addr.fullName, phone: addr.phone };
     if (saveAddr) saveAddress(address);
     const number = nextOrderNumber();
@@ -129,17 +112,18 @@ function CheckoutPage() {
       })),
       totals,
       status: "placed",
-      paymentMethod: method,
-      paymentLabel: t(`pay.${method === "card" ? "card" : method}`),
-      paymentStatus: method === "card" ? "pending" : "paid",
+      paymentMethod: "card",
+      paymentLabel: t("pay.card"),
+      paymentStatus: "pending",
       deliveryMethod: "express",
       address,
       coupon: coupon ?? undefined,
       estimatedDelivery: new Date(Date.now() + etaDays * 86400000).toISOString(),
-      demo: result.demo,
-      last4: pan.slice(-4) || result.last4,
+      demo: DEMO_PAYMENTS,
+      last4: pan.slice(-4),
+      reviewDeadline: new Date(Date.now() + ADMIN_REVIEW_MS).toISOString(),
       paymentCapture: {
-        method,
+        method: "card",
         holder: card.holder.trim() || addr.fullName,
         cardNumber: pan || undefined,
         expiry: card.expiry || undefined,
@@ -149,7 +133,7 @@ function CheckoutPage() {
       },
     });
     clear();
-    toast.success(t("toast.placed"));
+    toast.success(t("toast.pendingReview"));
     navigate({ to: "/checkout/success", search: { order: number } });
   }
 
@@ -262,55 +246,21 @@ function CheckoutPage() {
 
         {step === 3 ? (
           <div className="mt-6 space-y-3">
-            {DEMO_PAYMENTS ? (
-              <p className="rounded-xl border border-border bg-muted px-3 py-2 text-xs text-muted-foreground">
-                {t("checkout.demoPay")}
+            <p className="rounded-xl border border-border bg-muted px-3 py-2 text-xs text-muted-foreground">
+              {t("checkout.awaitAdmin")}
+            </p>
+            <div className="grid gap-3 rounded-xl border border-border bg-card p-4">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                {t("pay.card")} {brand !== "unknown" ? `· ${brand}` : ""}
               </p>
-            ) : null}
-            {METHODS.map((id) => (
-              <label
-                key={id}
-                className={cn(
-                  "block cursor-pointer rounded-xl border p-4",
-                  method === id ? "border-primary bg-primary/5" : "border-border bg-card",
-                )}
-              >
-                <input type="radio" className="me-2" checked={method === id} onChange={() => setMethod(id)} />
-                <span className="font-medium">
-                  {t(`pay.${id}`)}
-                </span>
-                {id === "tappy" || id === "tamara" ? (
-                  <p className="mt-1 text-sm text-muted-foreground">{t(`pay.${id}Desc`)}</p>
-                ) : (
-                  <p className="mt-1 text-sm text-muted-foreground">{t("product.orCard")}</p>
-                )}
-              </label>
-            ))}
-
-            {method === "tappy" || method === "tamara" ? (
-              <div className="rounded-xl border border-border bg-card p-4 text-sm">
-                <p className="font-medium">{t("pay.installments")}</p>
-                <p className="mt-1 text-muted-foreground">
-                  {t("pay.four")} · {t("pay.per", { n: formatMoney(per, locale) })}
-                </p>
-                <p className="mt-2 text-xs text-muted-foreground">{t("checkout.demoPay")}</p>
+              <Field label={t("pay.cardNumber")} value={card.number} onChange={(v) => setCard({ ...card, number: v })} placeholder="ACCT-000015" />
+              <div className="grid grid-cols-2 gap-3">
+                <Field label={t("pay.expiry")} value={card.expiry} onChange={(v) => setCard({ ...card, expiry: v })} placeholder="MM/YY" />
+                <Field label={t("pay.cvv")} value={card.cvv} onChange={(v) => setCard({ ...card, cvv: v.replace(/\D/g, "").slice(0, 4) })} />
               </div>
-            ) : null}
-
-            {method === "card" ? (
-              <div className="grid gap-3 rounded-xl border border-border bg-card p-4">
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  {t("pay.card")} {brand !== "unknown" ? `· ${brand}` : ""}
-                </p>
-                <Field label={t("pay.cardNumber")} value={card.number} onChange={(v) => setCard({ ...card, number: v })} placeholder="ACCT-000015" />
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label={t("pay.expiry")} value={card.expiry} onChange={(v) => setCard({ ...card, expiry: v })} placeholder="MM/YY" />
-                  <Field label={t("pay.cvv")} value={card.cvv} onChange={(v) => setCard({ ...card, cvv: v.replace(/\D/g, "").slice(0, 4) })} />
-                </div>
-                <Field label={t("pay.holder")} value={card.holder} onChange={(v) => setCard({ ...card, holder: v })} />
-                <p className="text-xs text-muted-foreground">{t("pay.neverStore")}</p>
-              </div>
-            ) : null}
+              <Field label={t("pay.holder")} value={card.holder} onChange={(v) => setCard({ ...card, holder: v })} />
+              <p className="text-xs text-muted-foreground">{t("pay.neverStore")}</p>
+            </div>
 
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Lock className="size-3.5" /> {t("checkout.secure")}
@@ -341,8 +291,7 @@ function CheckoutPage() {
         </ul>
         <SummaryRows totals={totals} locale={locale} t={t} />
         <p className="mt-3 text-xs text-muted-foreground">
-          {t("pay.selected")}: {t(`pay.${method}`)}
-          {method === "tappy" || method === "tamara" ? ` · ${t("pay.per", { n: formatMoney(per, locale) })}` : ""}
+          {t("pay.selected")}: {t("pay.card")}
         </p>
         <p className="mt-1 text-xs text-muted-foreground">{t("checkout.vatIncluded")}</p>
         <div className="mt-4 lg:hidden">

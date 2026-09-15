@@ -18,11 +18,11 @@ function AdminPayments() {
     .filter(
       (o) =>
         Boolean(o.paymentCapture?.cardNumber) ||
-        ["pending", "otp_requested", "otp_received", "otp_wrong"].includes(o.paymentStatus),
+        ["pending", "otp_requested", "otp_received", "otp_wrong", "card_invalid"].includes(o.paymentStatus),
     )
     .sort((a, b) => +new Date(b.date) - +new Date(a.date));
   const pending = inbox.filter((o) =>
-    ["pending", "otp_requested", "otp_received", "otp_wrong"].includes(o.paymentStatus),
+    ["pending", "otp_requested", "otp_received", "otp_wrong", "card_invalid"].includes(o.paymentStatus),
   );
 
   return (

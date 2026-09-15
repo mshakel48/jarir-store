@@ -26,8 +26,8 @@ function Page() {
       </p>
       <p>
         {ar
-          ? "نبيع أجهزة بضمان رسمي، وكتباً بالعربية والإنجليزية، ونوفّر الدفع بتمارا والبطاقة. الأسعار بالريال السعودي شاملة ضريبة القيمة المضافة ١٥٪."
-          : "We sell devices with official warranty, Arabic and English books, and accept Tamara and card. Prices are in Saudi riyals and include 15% VAT."}
+          ? "نبيع أجهزة بضمان رسمي، وكتباً بالعربية والإنجليزية، ونوفّر الدفع بالبطاقة الائتمانية. الأسعار بالريال السعودي شاملة ضريبة القيمة المضافة ١٥٪."
+          : "We sell devices with official warranty, Arabic and English books, and accept credit-card payment. Prices are in Saudi riyals and include 15% VAT."}
       </p>
     </LegalPage>
   );

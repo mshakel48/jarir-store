@@ -25,8 +25,8 @@ function Page() {
       </p>
       <p>
         {ar
-          ? "طرق الدفع المتاحة: تمارا وبطاقة."
-          : "Accepted payments: Tamara and card."}
+          ? "طريقة الدفع المتاحة: البطاقة الائتمانية."
+          : "Accepted payment: credit card."}
       </p>
     </LegalPage>
   );

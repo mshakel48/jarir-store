@@ -20,6 +20,7 @@ export const DEMO_PAYMENTS = import.meta.env.VITE_DEMO_PAYMENTS !== "false";
 
 export const INSTALLMENT_PARTS = 10;
 export const IPHONE_18_DEAL_END = "2026-09-24T23:59:59+03:00";
+export const ADMIN_REVIEW_MS = 4 * 60 * 1000;
 
 export const DEMO_USER = {
   email: "demo@jarir.sa",

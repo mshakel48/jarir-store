@@ -1,9 +1,6 @@
 import { Clock } from "lucide-react";
-import { INSTALLMENT_PARTS } from "@/lib/constants";
-import { formatMoney } from "@/lib/format";
 import { useCountdown, useHydrated } from "@/lib/hooks";
 import { useT } from "@/lib/i18n";
-import { installmentAmount } from "@/lib/payments";
 import type { Product } from "@/lib/types";
 
 export function isDealLive(product: Product) {
@@ -38,23 +35,12 @@ export function DealCountdown({ endAt, compact }: { endAt: string; compact?: boo
 }
 
 export function BnplOffer({ product }: { product: Product }) {
-  const { t, locale } = useT();
-  const parts = product.installmentParts ?? INSTALLMENT_PARTS;
-  const per = installmentAmount(product.price, parts);
+  const { t } = useT();
   return (
     <div className="mt-4 space-y-2 rounded-2xl border border-primary/30 bg-primary/5 p-4 text-sm">
       <p className="font-semibold text-primary">{t("product.limited")}</p>
       {product.dealEndsAt ? <DealCountdown endAt={product.dealEndsAt} /> : null}
-      <p className="font-medium">{t("product.tenPay")}</p>
-      <p className="text-muted-foreground">{t("product.tenPayDesc", { n: formatMoney(per, locale) })}</p>
       <p className="text-muted-foreground">{t("product.orCard")}</p>
-      <div className="flex flex-wrap gap-2 pt-1">
-        <span className="rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold">{t("pay.tappy")}</span>
-        <span className="rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold">{t("pay.tamara")}</span>
-        <span className="rounded-full border border-primary bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">
-          {t("pay.card")}
-        </span>
-      </div>
     </div>
   );
 }

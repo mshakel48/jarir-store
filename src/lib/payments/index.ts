@@ -123,7 +123,5 @@ export const PROVIDER_META: {
   id: PaymentMethodId;
   env: string;
 }[] = [
-  { id: "tappy", env: "TABBY_API_KEY" },
-  { id: "tamara", env: "TAMARA_API_KEY" },
   { id: "card", env: "PAYMENT_SECRET" },
 ];
