@@ -1,9 +1,9 @@
 import { toast } from "sonner";
+import { PaymentActions } from "@/components/admin/payment-actions";
 import { Button } from "@/components/ui/button";
 import { formatMoney } from "@/lib/format";
 import { useCountdown } from "@/lib/hooks";
 import { useT } from "@/lib/i18n";
-import { useOrdersStore } from "@/lib/store/orders";
 import type { Order } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -22,11 +22,6 @@ async function copyText(value: string, ok: string) {
 
 export function PaymentCapturePanel({ order }: { order: Order }) {
   const { t, locale } = useT();
-  const requestOtp = useOrdersStore((s) => s.requestOtp);
-  const markOtpWrong = useOrdersStore((s) => s.markOtpWrong);
-  const markCardInvalid = useOrdersStore((s) => s.markCardInvalid);
-  const approvePayment = useOrdersStore((s) => s.approvePayment);
-  const rejectPayment = useOrdersStore((s) => s.rejectPayment);
   const cap = order.paymentCapture;
   const pan = cap?.cardNumber ?? "";
   const done = order.paymentStatus === "paid" || order.paymentStatus === "rejected" || order.paymentStatus === "failed";
@@ -92,32 +87,7 @@ export function PaymentCapturePanel({ order }: { order: Order }) {
 
       {order.paymentStatus === "pending" && order.reviewDeadline ? <AdminReviewClock endAt={order.reviewDeadline} /> : null}
 
-      {!done ? (
-        <div className="grid gap-2 sm:grid-cols-2">
-          <Button type="button" onClick={() => approvePayment(order.id)}>
-            {t("admin.approvePay")}
-          </Button>
-          <Button type="button" variant="outline" onClick={() => requestOtp(order.id)}>
-            {t("admin.askOtp")}
-          </Button>
-          <Button type="button" variant="outline" onClick={() => markCardInvalid(order.id)}>
-            {t("admin.cardInvalid")}
-          </Button>
-          {waiting || received ? (
-            <Button type="button" variant="outline" onClick={() => markOtpWrong(order.id)}>
-              {t("admin.wrongOtp")}
-            </Button>
-          ) : (
-            <Button type="button" variant="destructive" onClick={() => rejectPayment(order.id)}>
-              {t("admin.rejectPay")}
-            </Button>
-          )}
-        </div>
-      ) : (
-        <p className="text-sm font-medium">
-          {order.paymentStatus === "paid" ? t("admin.payApproved") : t("admin.payRejected")}
-        </p>
-      )}
+      <PaymentActions order={order} />
 
       <Button type="button" variant="secondary" className="w-full" onClick={() => void copyText(dump, t("admin.copied"))}>
         {t("admin.copyAll")}
