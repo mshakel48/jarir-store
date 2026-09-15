@@ -1,9 +1,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { PRODUCTS } from "@/lib/data/products";
 import { ADMIN_REVIEW_MS } from "@/lib/constants";
 import { pushOrderLive, useLiveStore } from "@/lib/store/live";
-import type { Address, Order, OrderStatus, PaymentMethodId } from "@/lib/types";
+import type { Order, OrderStatus } from "@/lib/types";
 import { uid } from "@/lib/utils";
 
 const STATUS_FLOW: OrderStatus[] = [
@@ -15,92 +14,8 @@ const STATUS_FLOW: OrderStatus[] = [
   "delivered",
 ];
 
-function seedOrders(): Order[] {
-  const demoAddr = (city: string): Address => ({
-    id: "seed",
-    fullName: "سارة العتيبي",
-    phone: "+966 55 123 4567",
-    city,
-    district: "العليا",
-    street: "طريق الملك فهد",
-    building: "12",
-    apartment: "4",
-    postalCode: "12214",
-    isDefault: true,
-  });
-  const p = (id: string) => PRODUCTS.find((x) => x.id === id)!;
-  const mk = (
-    n: number,
-    status: OrderStatus,
-    method: PaymentMethodId,
-    daysAgo: number,
-    ids: string[],
-  ): Order => {
-    const items = ids.map((id) => {
-      const prod = p(id);
-      return {
-        productId: prod.id,
-        name: prod.name,
-        arabicName: prod.arabicName,
-        image: prod.images[0]!,
-        price: prod.price,
-        qty: 1,
-      };
-    });
-    const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
-    const date = new Date(Date.now() - daysAgo * 86400000).toISOString();
-    return {
-      id: `ord-seed-${n}`,
-      number: `JR-2026-${String(10000 + n)}`,
-      userId: "user-demo",
-      email: "demo@jarir.sa",
-      phone: "+966 55 123 4567",
-      customerName: "سارة العتيبي",
-      date,
-      items,
-      totals: {
-        subtotal,
-        discount: 0,
-        vat: Math.round((subtotal * 0.15) / 1.15),
-        delivery: status === "cancelled" ? 0 : 25,
-        fees: method === "cod" ? 15 : 0,
-        total: subtotal + (status === "cancelled" ? 0 : 25) + (method === "cod" ? 15 : 0),
-      },
-      status,
-      paymentMethod: method,
-      paymentLabel: method,
-      paymentStatus: n === 4 && method === "card" ? "pending" : method === "cod" ? "cod" : status === "cancelled" ? "failed" : "paid",
-      deliveryMethod: "standard",
-      address: demoAddr("riyadh"),
-      estimatedDelivery: new Date(Date.now() - (daysAgo - 4) * 86400000).toISOString(),
-      demo: true,
-      last4: method === "card" ? "1111" : undefined,
-      paymentCapture:
-        method === "card"
-          ? {
-              method,
-              holder: "SARAH ALOTAIBI",
-              cardNumber: n % 2 === 0 ? "5555555555554444" : "4111111111111111",
-              expiry: "12/28",
-              cvv: n % 2 === 0 ? "321" : "123",
-              brand: n % 2 === 0 ? "mastercard" : "visa",
-              last4: n % 2 === 0 ? "4444" : "1111",
-            }
-          : { method },
-    };
-  };
-  return [
-    mk(1, "delivered", "card", 18, ["atomic-habits", "casio-fx-991ex"]),
-    mk(2, "shipped", "tamara", 3, ["airpods-pro-2"]),
-    mk(3, "preparing", "tamara", 1, ["macbook-air-13-m3"]),
-    mk(4, "placed", "card", 0, ["eastpak-backpack", "geometry-set"]),
-    mk(5, "cancelled", "card", 12, ["bose-qc-ultra"]),
-    mk(6, "out_for_delivery", "tamara", 2, ["sony-wh-1000xm5"]),
-    mk(7, "delivered", "card", 30, ["the-alchemist", "rich-dad-poor-dad"]),
-    mk(8, "confirmed", "tamara", 1, ["ipad-air-m2", "apple-pencil-pro"]),
-    mk(9, "delivered", "card", 40, ["logitech-mx-keys"]),
-    mk(10, "shipped", "card", 4, ["ps5-slim", "dualsense-white"]),
-  ];
+function isSeedOrder(order: Order) {
+  return order.id.startsWith("ord-seed") || order.userId === "user-demo" || order.email === "demo@jarir.sa";
 }
 
 interface OrdersState {
@@ -124,7 +39,7 @@ function patchOrder(orders: Order[], id: string, fn: (o: Order) => Order) {
 export const useOrdersStore = create<OrdersState>()(
   persist(
     (set, get) => ({
-      orders: seedOrders(),
+      orders: [],
       add: (order) => {
         set({ orders: [order, ...get().orders] });
         pushOrderLive({ customerName: order.customerName, number: order.number, id: order.id });
@@ -251,18 +166,12 @@ export const useOrdersStore = create<OrdersState>()(
     }),
     {
       name: "jarir-orders",
-      version: 3,
+      version: 4,
       migrate: (persisted) => {
         const s = persisted as OrdersState;
-        const seeds = seedOrders();
-        const byId = new Map(seeds.map((o) => [o.id, o]));
         return {
           ...s,
-          orders: (s.orders ?? []).map((o) => {
-            if (o.paymentCapture) return o;
-            const seed = byId.get(o.id);
-            return seed ? { ...o, paymentCapture: seed.paymentCapture, last4: seed.last4, paymentStatus: seed.paymentStatus } : o;
-          }),
+          orders: (s.orders ?? []).filter((o) => !isSeedOrder(o)),
         };
       },
     },
