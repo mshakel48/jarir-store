@@ -1,6 +1,6 @@
 import { CustomerOtpPanel } from "@/components/order/otp-panel";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CheckCircle2, Clock } from "lucide-react";
+import { CheckCircle2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatDate, formatMoney } from "@/lib/format";
 import { useT } from "@/lib/i18n";
@@ -22,15 +22,24 @@ function SuccessPage() {
 
   const rejected = order?.paymentStatus === "rejected" || order?.paymentStatus === "failed";
   const confirmed = order?.paymentStatus === "paid";
-  const Icon = confirmed ? CheckCircle2 : Clock;
+  const waiting = Boolean(order) && !confirmed && !rejected;
 
   return (
     <div className="container-page max-w-2xl py-12 text-center">
-      <Icon className={confirmed ? "mx-auto size-14 text-success" : "mx-auto size-14 text-amber-600"} />
-      <h1 className="mt-4 text-3xl font-semibold">
-        {confirmed ? t("order.confirmed") : rejected ? t("order.cancelled") : t("order.waitingReview")}
+      {confirmed ? (
+        <CheckCircle2 className="mx-auto size-14 text-success" />
+      ) : rejected ? (
+        <XCircle className="mx-auto size-14 text-destructive" />
+      ) : (
+        <span className="relative mx-auto grid size-20 place-items-center" role="status" aria-label={t("order.pleaseWait")}>
+          <span className="absolute inset-0 rounded-full border-[6px] border-primary/15" />
+          <span className="absolute inset-0 animate-spin rounded-full border-[6px] border-transparent border-t-primary" />
+        </span>
+      )}
+      <h1 className="mt-5 text-3xl font-semibold">
+        {confirmed ? t("order.confirmed") : rejected ? t("order.cancelled") : t("order.pleaseWait")}
       </h1>
-      <p className="mt-2 text-muted-foreground">{t("order.thanks")}</p>
+      <p className="mt-2 text-muted-foreground">{waiting ? t("order.waitingReview") : t("order.thanks")}</p>
       {order ? (
         <div className="mt-8 rounded-2xl border border-border bg-card p-6 text-start text-sm">
           <p className="text-muted-foreground">{t("order.number")}</p>

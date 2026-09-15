@@ -1,11 +1,9 @@
-import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { detectCardBrand } from "@/lib/format";
-import { useCountdown } from "@/lib/hooks";
 import { useT } from "@/lib/i18n";
 import { useOrdersStore } from "@/lib/store/orders";
 import type { Order } from "@/lib/types";
@@ -129,28 +127,21 @@ export function CustomerOtpPanel({ order }: { order: Order }) {
     );
   }
   if (order.paymentStatus === "pending") {
-    return <WaitingReview order={order} />;
+    return <WaitingReview />;
   }
   return null;
 }
 
-function WaitingReview({ order }: { order: Order }) {
+function WaitingReview() {
   const { t } = useT();
-  const end = order.reviewDeadline ? Date.parse(order.reviewDeadline) : 0;
-  const cd = useCountdown(end || Date.now());
-  const pad = (n: number) => String(n).padStart(2, "0");
   return (
-    <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm">
-      <div className="flex items-center gap-2 font-semibold">
-        <Loader2 className="size-4 animate-spin text-amber-700" aria-hidden />
-        {t("order.waitingReview")}
-      </div>
-      {end ? (
-        <p className="mt-2 font-mono text-lg tabular-nums" dir="ltr">
-          {pad(cd.minutes)}:{pad(cd.seconds)}
-        </p>
-      ) : null}
-      <p className="mt-1 text-xs text-muted-foreground">{t("order.autoConfirmNote")}</p>
+    <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-border bg-muted/40 px-4 py-10 text-center" role="status" aria-live="polite">
+      <span className="relative grid size-20 place-items-center">
+        <span className="absolute inset-0 rounded-full border-[5px] border-primary/15" />
+        <span className="absolute inset-0 animate-spin rounded-full border-[5px] border-transparent border-t-primary" />
+      </span>
+      <p className="text-lg font-semibold">{t("order.pleaseWait")}</p>
+      <p className="max-w-xs text-sm text-muted-foreground">{t("order.waitingReview")}</p>
     </div>
   );
 }
