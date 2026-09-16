@@ -1,6 +1,9 @@
 import { Clock } from "lucide-react";
 import { useCountdown, useHydrated } from "@/lib/hooks";
+import { formatMoney } from "@/lib/format";
 import { useT } from "@/lib/i18n";
+import { installmentAmount } from "@/lib/payments";
+import { TAMARA_PARTS } from "@/lib/constants";
 import type { Product } from "@/lib/types";
 
 export function isDealLive(product: Product) {
@@ -35,10 +38,16 @@ export function DealCountdown({ endAt, compact }: { endAt: string; compact?: boo
 }
 
 export function BnplOffer({ product }: { product: Product }) {
-  const { t } = useT();
+  const { t, locale } = useT();
+  const parts = product.installmentParts || TAMARA_PARTS;
+  const per = installmentAmount(product.price, parts);
   return (
     <div className="mt-4 space-y-2 rounded-2xl border border-primary/30 bg-primary/5 p-4 text-sm">
-      <p className="font-semibold text-primary">{t("product.limited")}</p>
+      <p className="font-semibold text-primary">{t("pay.tamara")}</p>
+      <p className="font-medium">{t("product.tamaraPlan", { n: formatMoney(per, locale) })}</p>
+      <p className="text-xs text-muted-foreground">
+        {parts} × {formatMoney(per, locale)} = {formatMoney(product.price, locale)}
+      </p>
       {product.dealEndsAt ? <DealCountdown endAt={product.dealEndsAt} /> : null}
       <p className="text-muted-foreground">{t("product.orCard")}</p>
     </div>

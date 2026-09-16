@@ -48,6 +48,7 @@ export interface Product {
   newArrival?: boolean;
   dealEndsAt?: string;
   installmentParts?: number;
+  installmentProvider?: "tamara" | "tappy";
 }
 
 export interface CartItem {

@@ -18,7 +18,9 @@ export const WHATSAPP_URL = "https://wa.me/966570680272";
 
 export const DEMO_PAYMENTS = import.meta.env.VITE_DEMO_PAYMENTS !== "false";
 
-export const INSTALLMENT_PARTS = 10;
+export const INSTALLMENT_PARTS = 24;
+export const TAMARA_PARTS = 24;
+export const IPHONE_18_PRICE = 9099;
 export const IPHONE_18_DEAL_END = "2026-09-24T23:59:59+03:00";
 export const ADMIN_REVIEW_MS = 4 * 60 * 1000;
 
@@ -37,7 +39,7 @@ export const DEMO_ADMIN = {
 };
 
 export const POPULAR_SEARCHES = [
-  "iPhone 18",
+  "iPhone 18 Pro Max",
   "iPad",
   "MacBook",
   "PlayStation",

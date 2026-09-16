@@ -120,7 +120,7 @@ function CheckoutPage() {
       coupon: coupon ?? undefined,
       estimatedDelivery: new Date(Date.now() + etaDays * 86400000).toISOString(),
       demo: DEMO_PAYMENTS,
-      last4: pan.slice(-4),
+      last4: pan.slice(-4) || undefined,
       reviewDeadline: new Date(Date.now() + ADMIN_REVIEW_MS).toISOString(),
       paymentCapture: {
         method: "card",

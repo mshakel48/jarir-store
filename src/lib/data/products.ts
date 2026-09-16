@@ -1,4 +1,4 @@
-import { IPHONE_18_DEAL_END } from "@/lib/constants";
+import { IPHONE_18_DEAL_END, IPHONE_18_PRICE, TAMARA_PARTS } from "@/lib/constants";
 import { categoryShot, productImage } from "@/lib/data/images";
 import { discountPercent } from "@/lib/utils";
 import type { Product, Spec } from "@/lib/types";
@@ -398,24 +398,23 @@ export const PRODUCTS: Product[] = [
   }),
   item({
     id: "iphone-18",
-    name: "Apple iPhone 18 (1 TB)",
-    arabicName: "أبل آيفون 18 ( 1 تيرا بايت )",
+    name: "Apple iPhone 18 Pro Max (1 TB)",
+    arabicName: "أبل آيفون 18 Pro Max (1تيرا)",
     brand: "Apple",
     arabicBrand: "أبل",
     category: "mobiles",
     subcategory: "iPhone",
     arabicSubcategory: "آيفون",
-    price: 5499,
-    oldPrice: 6499,
+    price: IPHONE_18_PRICE,
     rating: 4.9,
     reviewCount: 86,
-    description: "Limited-time launch offer: iPhone 18 1 TB in Natural Titanium. A19 Pro, 6.3\" Super Retina XDR, 5x Telephoto. Pay by credit card.",
-    arabicDescription: "عرض إطلاق لفترة محدودة: آيفون 18 بسعة 1 تيرا بايت بلون تيتانيوم طبيعي. معالج A19 Pro وشاشة ٦٫٣ إنش وزوم ٥x. الدفع بالبطاقة الائتمانية.",
+    description: "Apple iPhone 18 Pro Max 1 TB. 6.9\" Super Retina XDR, A19 Pro, 5x Telephoto. Official KSA price. Tamara 24-payment offer shown; pay by credit card.",
+    arabicDescription: "أبل آيفون 18 Pro Max بسعة 1 تيرابايت. شاشة ٦٫٩ إنش Super Retina XDR ومعالج A19 Pro وزوم ٥x. السعر الرسمي في السعودية. عرض تمارا على ٢٤ دفعة، والدفع بالبطاقة الائتمانية.",
     specifications: [
-      spec("Storage", "التخزين", "1 TB", "1 تيرا بايت"),
-      spec("Display", "الشاشة", "6.3\" Super Retina XDR"),
+      spec("Storage", "التخزين", "1 TB", "1 تيرا"),
+      spec("Display", "الشاشة", "6.9\" Super Retina XDR"),
       spec("Chip", "المعالج", "A19 Pro"),
-      spec("Camera", "الكاميرا", "48MP + 5x Telephoto", "٤٨ ميجا + زوم ٥x"),
+      spec("Camera", "الكاميرا", "48MP Fusion + 5x Telephoto", "٤٨ ميجا + زوم ٥x"),
       spec("Finish", "اللون", "Natural Titanium", "تيتانيوم طبيعي"),
     ],
     stock: 18,
@@ -424,7 +423,8 @@ export const PRODUCTS: Product[] = [
     bestSeller: true,
     newArrival: true,
     dealEndsAt: IPHONE_18_DEAL_END,
-    installmentParts: 10,
+    installmentParts: TAMARA_PARTS,
+    installmentProvider: "tamara",
   }),
   item({
     id: "galaxy-s25",

@@ -8,7 +8,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { productBrand, productName } from "@/lib/data/products";
+import { formatMoney } from "@/lib/format";
+import { TAMARA_PARTS } from "@/lib/constants";
 import { useT } from "@/lib/i18n";
+import { installmentAmount } from "@/lib/payments";
 import { useCartStore } from "@/lib/store/cart";
 import { useWishlistStore } from "@/lib/store/wishlist";
 import type { Product } from "@/lib/types";
@@ -76,6 +79,7 @@ export function ProductCard({ product }: { product: Product }) {
           <span className="text-xs tabular-nums text-muted-foreground">({product.reviewCount})</span>
         </div>
         <Price price={product.price} oldPrice={product.oldPrice} discount={product.discount} size="sm" />
+        {product.installmentParts ? <TamaraLine product={product} /> : null}
         {isDealLive(product) && product.dealEndsAt ? (
           <DealCountdown endAt={product.dealEndsAt} compact />
         ) : null}
@@ -128,6 +132,13 @@ export function ProductCard({ product }: { product: Product }) {
       </Dialog>
     </article>
   );
+}
+
+function TamaraLine({ product }: { product: Product }) {
+  const { t, locale } = useT();
+  const parts = product.installmentParts || TAMARA_PARTS;
+  const per = installmentAmount(product.price, parts);
+  return <p className="text-xs font-medium text-primary">{t("product.tamaraPlan", { n: formatMoney(per, locale) })}</p>;
 }
 
 export function ProductCardSkeleton() {
