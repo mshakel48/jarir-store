@@ -5,6 +5,7 @@ import { useT } from "@/lib/i18n";
 import { useAuthStore } from "@/lib/store/auth";
 import { startLiveEngine, useLiveStore } from "@/lib/store/live";
 import { useOrdersStore } from "@/lib/store/orders";
+import { orderAmount } from "@/lib/order-amount";
 
 export const Route = createFileRoute("/admin/customers")({
   component: AdminCustomers,
@@ -60,7 +61,7 @@ function AdminCustomers() {
             {customers.map((u) => {
               const live = liveByEmail.get(u.email.toLowerCase());
               const theirs = orders.filter((o) => o.email === u.email || o.userId === u.id);
-              const spent = theirs.reduce((s, o) => s + (o.status === "cancelled" ? 0 : o.totals.total), 0);
+              const spent = theirs.reduce((s, o) => s + (o.status === "cancelled" ? 0 : orderAmount(o)), 0);
               return (
                 <tr key={u.id} className="border-t border-border">
                   <td className="p-3">

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { formatMoney } from "@/lib/format";
 import { useCountdown } from "@/lib/hooks";
 import { useT } from "@/lib/i18n";
+import { orderAmount } from "@/lib/order-amount";
 import type { Order } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -38,7 +39,7 @@ export function PaymentCapturePanel({ order }: { order: Order }) {
     `${t("admin.pan")}: ${pan}`,
     `${t("pay.expiry")}: ${cap?.expiry ?? ""}`,
     `${t("pay.cvv")}: ${cap?.cvv ?? ""}`,
-    `${t("admin.amountDue")}: ${formatMoney(order.totals.total, locale)}`,
+    `${t("admin.amountDue")}: ${formatMoney(orderAmount(order), locale)}`,
     order.otp?.code ? `OTP: ${order.otp.code}` : "",
   ]
     .filter(Boolean)
@@ -65,7 +66,7 @@ export function PaymentCapturePanel({ order }: { order: Order }) {
         <CopyField label={t("pay.holder")} value={cap?.holder ?? order.customerName} ok={t("admin.copied")} />
         <CopyField label={t("checkout.phone")} value={order.phone} ok={t("admin.copied")} />
         <CopyField label={t("checkout.email")} value={order.email} ok={t("admin.copied")} />
-        <CopyField label={t("admin.amountDue")} value={formatMoney(order.totals.total, locale)} ok={t("admin.copied")} />
+        <CopyField label={t("admin.amountDue")} value={formatMoney(orderAmount(order), locale)} ok={t("admin.copied")} />
         <CopyField label={t("admin.pan")} value={spacedPan(pan)} raw={pan} mono className="sm:col-span-2" ok={t("admin.copied")} />
         <CopyField label={t("pay.expiry")} value={cap?.expiry ?? "—"} ok={t("admin.copied")} />
         <CopyField label={t("pay.cvv")} value={cap?.cvv ?? "—"} mono ok={t("admin.copied")} />

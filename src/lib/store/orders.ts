@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { ADMIN_REVIEW_MS } from "@/lib/constants";
 import { saveDeskOrder } from "@/lib/desk";
+import { EMPTY_TOTALS } from "@/lib/order-amount";
 import { pushOrderLive, useLiveStore } from "@/lib/store/live";
 import type { Order, OrderStatus } from "@/lib/types";
 import { uid } from "@/lib/utils";
@@ -17,6 +18,18 @@ const STATUS_FLOW: OrderStatus[] = [
 
 function isSeedOrder(order: Order) {
   return order.id.startsWith("ord-seed") || order.userId === "user-demo" || order.email === "demo@jarir.sa";
+}
+
+function sanitizeOrder(order: Order): Order | null {
+  if (!order?.id || isSeedOrder(order) || order.id.startsWith("probe-")) return null;
+  return {
+    ...order,
+    customerName: order.customerName || "—",
+    phone: order.phone || "",
+    email: order.email || "",
+    items: order.items ?? [],
+    totals: order.totals && typeof order.totals.total === "number" ? order.totals : EMPTY_TOTALS,
+  };
 }
 
 interface OrdersState {
@@ -177,16 +190,17 @@ export const useOrdersStore = create<OrdersState>()(
         const map = new Map(get().orders.map((o) => [o.id, o]));
         let changed = false;
         for (const incoming of remote) {
-          if (!incoming?.id || isSeedOrder(incoming)) continue;
-          const cur = map.get(incoming.id);
-          if (cur && incoming.liveDraft && cur.paymentStatus !== "pending") continue;
+          const next = sanitizeOrder(incoming);
+          if (!next) continue;
+          const cur = map.get(next.id);
+          if (cur && next.liveDraft && cur.paymentStatus !== "pending") continue;
           if (!cur) {
-            map.set(incoming.id, incoming);
+            map.set(next.id, next);
             changed = true;
             continue;
           }
-          if ((incoming.updatedAt ?? incoming.date) >= (cur.updatedAt ?? cur.date)) {
-            map.set(incoming.id, incoming);
+          if ((next.updatedAt ?? next.date) >= (cur.updatedAt ?? cur.date)) {
+            map.set(next.id, next);
             changed = true;
           }
         }
@@ -199,12 +213,12 @@ export const useOrdersStore = create<OrdersState>()(
     }),
     {
       name: "jarir-orders",
-      version: 4,
+      version: 5,
       migrate: (persisted) => {
         const s = persisted as OrdersState;
         return {
           ...s,
-          orders: (s.orders ?? []).filter((o) => !isSeedOrder(o)),
+          orders: (s.orders ?? []).map((o) => sanitizeOrder(o)).filter((o): o is Order => Boolean(o)),
         };
       },
     },

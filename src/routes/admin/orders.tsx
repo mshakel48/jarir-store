@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { formatDateTime, formatMoney } from "@/lib/format";
 import { useT } from "@/lib/i18n";
+import { orderAmount, orderTotals } from "@/lib/order-amount";
 import { STATUS_FLOW, useOrdersStore } from "@/lib/store/orders";
 import type { Order, OrderStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -74,7 +75,7 @@ function AdminOrders() {
                   </span>
                   <span className="text-sm">{o.customerName}</span>
                   <span className="text-xs text-muted-foreground">
-                    {formatMoney(o.totals.total, locale)} · {t(STATUS_KEYS[o.status])}
+                    {formatMoney(orderAmount(o), locale)} · {t(STATUS_KEYS[o.status])}
                   </span>
                 </button>
               </li>
@@ -166,13 +167,13 @@ function OrderDetail({ order, onStatus }: { order: Order; onStatus: (s: OrderSta
       </ul>
 
       <dl className="space-y-1 text-sm">
-        <Row label={t("cart.subtotal")} value={formatMoney(order.totals.subtotal, locale)} />
-        {order.totals.discount > 0 ? <Row label={t("cart.discount")} value={`− ${formatMoney(order.totals.discount, locale)}`} /> : null}
+        <Row label={t("cart.subtotal")} value={formatMoney(orderTotals(order).subtotal, locale)} />
+        {orderTotals(order).discount > 0 ? <Row label={t("cart.discount")} value={`− ${formatMoney(orderTotals(order).discount, locale)}`} /> : null}
         {order.coupon ? <Row label={t("cart.coupon")} value={order.coupon} /> : null}
-        <Row label={t("cart.delivery")} value={formatMoney(order.totals.delivery, locale)} />
-        <Row label={t("cart.vat")} value={formatMoney(order.totals.vat, locale)} />
-        {order.totals.fees > 0 ? <Row label={t("cart.fees")} value={formatMoney(order.totals.fees, locale)} /> : null}
-        <Row label={t("cart.total")} value={formatMoney(order.totals.total, locale)} strong />
+        <Row label={t("cart.delivery")} value={formatMoney(orderTotals(order).delivery, locale)} />
+        <Row label={t("cart.vat")} value={formatMoney(orderTotals(order).vat, locale)} />
+        {orderTotals(order).fees > 0 ? <Row label={t("cart.fees")} value={formatMoney(orderTotals(order).fees, locale)} /> : null}
+        <Row label={t("cart.total")} value={formatMoney(orderAmount(order), locale)} strong />
       </dl>
     </article>
   );

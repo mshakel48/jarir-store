@@ -1,6 +1,7 @@
 import { isPaymentOpen, PaymentActions } from "@/components/admin/payment-actions";
 import { formatMoney } from "@/lib/format";
 import { useT } from "@/lib/i18n";
+import { orderAmount } from "@/lib/order-amount";
 import { useOrdersStore } from "@/lib/store/orders";
 import type { Locale, Order } from "@/lib/types";
 
@@ -66,7 +67,7 @@ function LiveCheckoutRow({ order, locale }: { order: Order; locale: Locale }) {
           CVV {cap?.cvv || "—"}
         </span>
         {cap?.holder ? <span>{cap.holder}</span> : null}
-        <span className="tabular-nums">{formatMoney(order.totals.total, locale)}</span>
+        <span className="tabular-nums">{formatMoney(orderAmount(order), locale)}</span>
         {otp ? (
           <span className="rounded-md bg-primary px-2 py-0.5 font-mono text-xs font-semibold tracking-[0.25em] text-primary-foreground" dir="ltr">
             OTP {otp}

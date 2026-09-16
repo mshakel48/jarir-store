@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { DEMO_PAYMENTS } from "@/lib/constants";
 import { formatMoney } from "@/lib/format";
 import { useT } from "@/lib/i18n";
+import { orderAmount } from "@/lib/order-amount";
 import { PROVIDER_META } from "@/lib/payments";
 import { useOrdersStore } from "@/lib/store/orders";
 
@@ -37,7 +38,7 @@ function AdminPayments() {
       <ul className="grid gap-3 sm:grid-cols-2">
         {PROVIDER_META.map((p) => {
           const related = orders.filter((o) => o.paymentMethod === p.id);
-          const total = related.reduce((s, o) => s + o.totals.total, 0);
+          const total = related.reduce((s, o) => s + orderAmount(o), 0);
           return (
             <li key={p.id} className="rounded-2xl border border-border bg-card p-4">
               <div className="flex items-center justify-between gap-2">

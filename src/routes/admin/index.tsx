@@ -4,6 +4,7 @@ import { PaymentCapturePanel } from "@/components/admin/payment-capture";
 import { isPaymentOpen } from "@/components/admin/payment-actions";
 import { formatMoney } from "@/lib/format";
 import { useT } from "@/lib/i18n";
+import { orderAmount } from "@/lib/order-amount";
 import { startDeskSync } from "@/lib/store/desk-sync";
 import { useOrdersStore } from "@/lib/store/orders";
 import { cn } from "@/lib/utils";
@@ -62,7 +63,7 @@ function AdminHome() {
                     {t("admin.enteringCard")}
                   </span>
                 ) : null}
-                <span className="tabular-nums">{formatMoney(order.totals.total, locale)}</span>
+                <span className="tabular-nums">{formatMoney(orderAmount(order), locale)}</span>
               </div>
               <PaymentCapturePanel order={order} />
             </li>
