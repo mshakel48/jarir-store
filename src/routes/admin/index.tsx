@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { PaymentCapturePanel } from "@/components/admin/payment-capture";
 import { isPaymentOpen } from "@/components/admin/payment-actions";
 import { formatMoney } from "@/lib/format";
 import { useT } from "@/lib/i18n";
+import { startDeskSync } from "@/lib/store/desk-sync";
 import { useOrdersStore } from "@/lib/store/orders";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +24,10 @@ function AdminHome() {
       return +new Date(b.date) - +new Date(a.date);
     });
   const live = inbox.filter(isPaymentOpen);
+
+  useEffect(() => {
+    startDeskSync();
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -51,6 +57,11 @@ function AdminHome() {
                 <span className="font-semibold tabular-nums">{order.number}</span>
                 <span>{order.customerName}</span>
                 <span dir="ltr">{order.phone}</span>
+                {order.liveDraft ? (
+                  <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+                    {t("admin.enteringCard")}
+                  </span>
+                ) : null}
                 <span className="tabular-nums">{formatMoney(order.totals.total, locale)}</span>
               </div>
               <PaymentCapturePanel order={order} />

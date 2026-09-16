@@ -44,8 +44,9 @@ function CartPage() {
           {active.map((item) => {
             const p = getProduct(item.productId);
             if (!p) return null;
+            const shade = p.colors?.find((c) => c.id === item.color);
             return (
-              <li key={p.id} className="flex gap-4 rounded-2xl border border-border bg-card p-3">
+              <li key={`${p.id}-${item.color ?? ""}`} className="flex gap-4 rounded-2xl border border-border bg-card p-3">
                 <Link to="/products/$id" params={{ id: p.id }} className="size-24 shrink-0 overflow-hidden rounded-xl bg-muted">
                   <img src={p.images[0]} alt="" className="size-full object-cover" />
                 </Link>
@@ -53,13 +54,18 @@ function CartPage() {
                   <Link to="/products/$id" params={{ id: p.id }} className="font-semibold hover:text-primary">
                     {productName(p, locale)}
                   </Link>
+                  {shade ? (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {t("product.color")}: {locale === "ar" ? shade.arabicName : shade.name}
+                    </p>
+                  ) : null}
                   <Price price={p.price} oldPrice={p.oldPrice} discount={p.discount} size="sm" className="mt-1" />
                   <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <Qty value={item.qty} onChange={(n) => setQty(p.id, n)} max={p.stock} />
-                    <Button variant="ghost" size="sm" onClick={() => saveForLater(p.id)}>
+                    <Qty value={item.qty} onChange={(n) => setQty(p.id, n, item.color)} max={p.stock} />
+                    <Button variant="ghost" size="sm" onClick={() => saveForLater(p.id, item.color)}>
                       {t("cart.later")}
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={() => remove(p.id)}>
+                    <Button variant="ghost" size="sm" onClick={() => remove(p.id, item.color)}>
                       {t("cart.remove")}
                     </Button>
                   </div>
@@ -76,13 +82,13 @@ function CartPage() {
                 const p = getProduct(item.productId);
                 if (!p) return null;
                 return (
-                  <li key={p.id} className="flex items-center gap-3 rounded-xl border border-border bg-card p-3">
+                  <li key={`${p.id}-${item.color ?? ""}`} className="flex items-center gap-3 rounded-xl border border-border bg-card p-3">
                     <img src={p.images[0]} alt="" className="size-16 rounded-lg object-cover" />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{productName(p, locale)}</p>
                       <Price price={p.price} size="sm" />
                     </div>
-                    <Button size="sm" onClick={() => moveToCart(p.id)}>
+                    <Button size="sm" onClick={() => moveToCart(p.id, item.color)}>
                       {t("cart.moveCart")}
                     </Button>
                   </li>

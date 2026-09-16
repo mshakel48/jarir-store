@@ -22,6 +22,7 @@ import { useViewedStore } from "@/lib/store/viewed";
 import { useWishlistStore } from "@/lib/store/wishlist";
 import { cn } from "@/lib/utils";
 import { PackageX } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/products/$id")({
   component: ProductPage,
@@ -40,11 +41,13 @@ function ProductPage() {
   const [qty, setQty] = useState(1);
   const [img, setImg] = useState(0);
   const [tab, setTab] = useState<"desc" | "specs" | "reviews" | "ship">("desc");
+  const [color, setColor] = useState<string>();
 
   useEffect(() => {
     if (product) record(product.id);
     setImg(0);
     setQty(1);
+    setColor(undefined);
   }, [product, record]);
 
   if (!product) {
@@ -116,9 +119,44 @@ function ProductPage() {
             )}
           </p>
 
+          {product.colors?.length ? (
+            <div className="mt-6">
+              <p className="text-sm font-semibold">{t("product.chooseColor")}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {product.colors.map((c) => {
+                  const selected = color === c.id;
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setColor(c.id)}
+                      className={cn(
+                        "flex items-center gap-2 rounded-full border px-3 py-2 text-sm",
+                        selected ? "border-primary bg-primary/5 font-semibold" : "border-border bg-card",
+                      )}
+                    >
+                      <span className="size-5 rounded-full border border-black/10" style={{ background: c.hex }} />
+                      {locale === "ar" ? c.arabicName : c.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <Qty value={qty} onChange={setQty} max={Math.max(1, product.stock)} />
-            <Button className="min-w-40 flex-1" disabled={out} onClick={() => add(product.id, qty)}>
+            <Button
+              className="min-w-40 flex-1"
+              disabled={out}
+              onClick={() => {
+                if (product.colors?.length && !color) {
+                  toast.error(t("product.colorRequired"));
+                  return;
+                }
+                add(product.id, qty, color);
+              }}
+            >
               {t("product.addToCart")}
             </Button>
             <Button
@@ -126,7 +164,11 @@ function ProductPage() {
               className="min-w-32"
               disabled={out}
               onClick={() => {
-                add(product.id, qty);
+                if (product.colors?.length && !color) {
+                  toast.error(t("product.colorRequired"));
+                  return;
+                }
+                add(product.id, qty, color);
                 navigate({ to: "/checkout" });
               }}
             >
@@ -240,7 +282,11 @@ function ProductPage() {
           <Button
             className="mt-4"
             onClick={() => {
-              add(product.id);
+              if (product.colors?.length && !color) {
+                toast.error(t("product.colorRequired"));
+                return;
+              }
+              add(product.id, qty, color);
               together.forEach((p) => add(p.id));
             }}
           >

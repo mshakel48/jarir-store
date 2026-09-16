@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useT } from "@/lib/i18n";
+import { startDeskSync } from "@/lib/store/desk-sync";
 import { startLiveEngine, useLiveStore } from "@/lib/store/live";
 import { useAuthStore, useCurrentShopUser } from "@/lib/store/auth";
 import { cn } from "@/lib/utils";
@@ -42,6 +43,7 @@ function AdminLayout() {
 
   useEffect(() => {
     startLiveEngine();
+    startDeskSync();
   }, []);
 
   if (!user || user.role !== "admin") {

@@ -13,15 +13,19 @@ interface CartState {
   coupon: string | null;
   deliveryMethod: DeliveryMethodId;
   pickupStoreId?: string;
-  add: (productId: string, qty?: number) => void;
-  remove: (productId: string) => void;
-  setQty: (productId: string, qty: number) => void;
-  saveForLater: (productId: string) => void;
-  moveToCart: (productId: string) => void;
+  add: (productId: string, qty?: number, color?: string) => void;
+  remove: (productId: string, color?: string) => void;
+  setQty: (productId: string, qty: number, color?: string) => void;
+  saveForLater: (productId: string, color?: string) => void;
+  moveToCart: (productId: string, color?: string) => void;
   applyCoupon: (code: string) => boolean;
   clearCoupon: () => void;
   setDelivery: (method: DeliveryMethodId, storeId?: string) => void;
   clear: () => void;
+}
+
+function sameLine(item: CartItem, productId: string, color?: string) {
+  return item.productId === productId && (item.color || "") === (color || "");
 }
 
 function tToast(key: string) {
@@ -34,39 +38,41 @@ export const useCartStore = create<CartState>()(
       items: [],
       coupon: null,
       deliveryMethod: "express",
-      add: (productId, qty = 1) => {
+      add: (productId, qty = 1, color) => {
         const product = getProduct(productId);
         if (!product || product.stock <= 0) return;
+        if (product.colors?.length && !color) return;
         const items = get().items.slice();
-        const existing = items.find((i) => i.productId === productId);
+        const existing = items.find((i) => sameLine(i, productId, color));
         if (existing) {
           existing.qty = Math.min(product.stock, existing.qty + qty);
           existing.savedForLater = false;
         } else {
-          items.push({ productId, qty: Math.min(product.stock, qty) });
+          items.push({ productId, qty: Math.min(product.stock, qty), color });
         }
         set({ items });
         toast.success(tToast("toast.added"));
       },
-      remove: (productId) => set({ items: get().items.filter((i) => i.productId !== productId) }),
-      setQty: (productId, qty) => {
+      remove: (productId, color) =>
+        set({ items: get().items.filter((i) => !sameLine(i, productId, color)) }),
+      setQty: (productId, qty, color) => {
         const product = getProduct(productId);
         const next = Math.max(0, Math.min(product?.stock ?? qty, qty));
         if (next <= 0) {
-          set({ items: get().items.filter((i) => i.productId !== productId) });
+          set({ items: get().items.filter((i) => !sameLine(i, productId, color)) });
           return;
         }
         set({
-          items: get().items.map((i) => (i.productId === productId ? { ...i, qty: next } : i)),
+          items: get().items.map((i) => (sameLine(i, productId, color) ? { ...i, qty: next } : i)),
         });
       },
-      saveForLater: (productId) =>
+      saveForLater: (productId, color) =>
         set({
-          items: get().items.map((i) => (i.productId === productId ? { ...i, savedForLater: true } : i)),
+          items: get().items.map((i) => (sameLine(i, productId, color) ? { ...i, savedForLater: true } : i)),
         }),
-      moveToCart: (productId) =>
+      moveToCart: (productId, color) =>
         set({
-          items: get().items.map((i) => (i.productId === productId ? { ...i, savedForLater: false } : i)),
+          items: get().items.map((i) => (sameLine(i, productId, color) ? { ...i, savedForLater: false } : i)),
         }),
       applyCoupon: (code) => {
         const coupon = findCoupon(code);

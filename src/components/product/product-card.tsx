@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { Eye, Heart, ShoppingBag } from "lucide-react";
 import { useState } from "react";
 import { Price } from "@/components/price";
@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 
 export function ProductCard({ product }: { product: Product }) {
   const { t, locale } = useT();
+  const navigate = useNavigate();
   const add = useCartStore((s) => s.add);
   const wished = useWishlistStore((s) => s.ids.includes(product.id));
   const toggleWish = useWishlistStore((s) => s.toggle);
@@ -89,7 +90,13 @@ export function ProductCard({ product }: { product: Product }) {
         <Button
           className="mt-auto w-full"
           disabled={out}
-          onClick={() => add(product.id)}
+          onClick={() => {
+            if (product.colors?.length) {
+              void navigate({ to: "/products/$id", params: { id: product.id } });
+              return;
+            }
+            add(product.id);
+          }}
         >
           <ShoppingBag className="size-4" />
           {t("product.addToCart")}
@@ -117,7 +124,18 @@ export function ProductCard({ product }: { product: Product }) {
                 {locale === "ar" ? product.arabicDescription : product.description}
               </p>
               <div className="mt-auto flex gap-2">
-                <Button className="flex-1" disabled={out} onClick={() => add(product.id)}>
+                <Button
+                  className="flex-1"
+                  disabled={out}
+                  onClick={() => {
+                    if (product.colors?.length) {
+                      setQuick(false);
+                      void navigate({ to: "/products/$id", params: { id: product.id } });
+                      return;
+                    }
+                    add(product.id);
+                  }}
+                >
                   {t("product.addToCart")}
                 </Button>
                 <Button variant="outline" asChild>

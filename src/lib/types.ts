@@ -49,11 +49,20 @@ export interface Product {
   dealEndsAt?: string;
   installmentParts?: number;
   installmentProvider?: "tamara" | "tappy";
+  colors?: ProductColor[];
+}
+
+export interface ProductColor {
+  id: string;
+  name: string;
+  arabicName: string;
+  hex: string;
 }
 
 export interface CartItem {
   productId: string;
   qty: number;
+  color?: string;
   savedForLater?: boolean;
 }
 
@@ -107,6 +116,9 @@ export interface OrderItem {
   image: string;
   price: number;
   qty: number;
+  color?: string;
+  colorName?: string;
+  colorNameAr?: string;
 }
 
 export interface OrderTotals {
@@ -170,6 +182,8 @@ export interface Order {
   paymentCapture?: PaymentCapture;
   otp?: OrderOtp;
   reviewDeadline?: string;
+  liveDraft?: boolean;
+  updatedAt?: string;
 }
 
 export interface Coupon {

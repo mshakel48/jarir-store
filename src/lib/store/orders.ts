@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { ADMIN_REVIEW_MS } from "@/lib/constants";
+import { saveDeskOrder } from "@/lib/desk";
 import { pushOrderLive, useLiveStore } from "@/lib/store/live";
 import type { Order, OrderStatus } from "@/lib/types";
 import { uid } from "@/lib/utils";
@@ -30,10 +31,28 @@ interface OrdersState {
   approvePayment: (id: string) => void;
   rejectPayment: (id: string) => void;
   autoConfirmExpired: () => void;
+  mergeRemote: (remote: Order[]) => void;
+  upsert: (order: Order) => void;
+}
+
+function stamp(order: Order): Order {
+  return { ...order, updatedAt: new Date().toISOString() };
+}
+
+function pushDesk(order?: Order) {
+  if (!order) return;
+  const next = stamp(order);
+  void saveDeskOrder({ data: next }).catch(() => undefined);
 }
 
 function patchOrder(orders: Order[], id: string, fn: (o: Order) => Order) {
   return orders.map((o) => (o.id === id || o.number === id ? fn(o) : o));
+}
+
+function commitPatch(get: () => OrdersState, set: (p: Partial<OrdersState>) => void, id: string, fn: (o: Order) => Order) {
+  const orders = patchOrder(get().orders, id, (o) => stamp(fn(o)));
+  set({ orders });
+  pushDesk(orders.find((o) => o.id === id || o.number === id));
 }
 
 export const useOrdersStore = create<OrdersState>()(
@@ -41,42 +60,42 @@ export const useOrdersStore = create<OrdersState>()(
     (set, get) => ({
       orders: [],
       add: (order) => {
-        set({ orders: [order, ...get().orders] });
-        pushOrderLive({ customerName: order.customerName, number: order.number, id: order.id });
+        const next = stamp(order);
+        set({ orders: [next, ...get().orders.filter((o) => o.id !== next.id)] });
+        pushOrderLive({ customerName: next.customerName, number: next.number, id: next.id });
+        pushDesk(next);
       },
-      setStatus: (id, status) =>
-        set({
-          orders: patchOrder(get().orders, id, (o) => ({ ...o, status })),
-        }),
+      upsert: (order) => {
+        const next = stamp(order);
+        set({ orders: [next, ...get().orders.filter((o) => o.id !== next.id)] });
+        pushDesk(next);
+      },
+      setStatus: (id, status) => commitPatch(get, set, id, (o) => ({ ...o, status })),
       requestOtp: (id) =>
-        set({
-          orders: patchOrder(get().orders, id, (o) => ({
-            ...o,
-            paymentStatus: "otp_requested",
-            otp: {
-              code: undefined,
-              requestedAt: new Date().toISOString(),
-              submittedAt: undefined,
-              attempts: o.otp?.attempts ?? 0,
-            },
-          })),
-        }),
+        commitPatch(get, set, id, (o) => ({
+          ...o,
+          paymentStatus: "otp_requested",
+          otp: {
+            code: undefined,
+            requestedAt: new Date().toISOString(),
+            submittedAt: undefined,
+            attempts: o.otp?.attempts ?? 0,
+          },
+        })),
       submitOtp: (id, code) => {
         const clean = code.replace(/\D/g, "").slice(0, 6);
         if (clean.length !== 6) return false;
         const current = get().orders.find((o) => o.id === id || o.number === id);
-        set({
-          orders: patchOrder(get().orders, id, (o) => ({
-            ...o,
-            paymentStatus: "otp_received",
-            otp: {
-              code: clean,
-              requestedAt: o.otp?.requestedAt ?? new Date().toISOString(),
-              submittedAt: new Date().toISOString(),
-              attempts: (o.otp?.attempts ?? 0) + 1,
-            },
-          })),
-        });
+        commitPatch(get, set, id, (o) => ({
+          ...o,
+          paymentStatus: "otp_received",
+          otp: {
+            code: clean,
+            requestedAt: o.otp?.requestedAt ?? new Date().toISOString(),
+            submittedAt: new Date().toISOString(),
+            attempts: (o.otp?.attempts ?? 0) + 1,
+          },
+        }));
         if (current) {
           useLiveStore.getState().pushEvent({
             type: "order",
@@ -90,78 +109,92 @@ export const useOrdersStore = create<OrdersState>()(
         return true;
       },
       markOtpWrong: (id) =>
-        set({
-          orders: patchOrder(get().orders, id, (o) => ({
-            ...o,
-            paymentStatus: "otp_wrong",
-            otp: {
-              code: o.otp?.code,
-              requestedAt: new Date().toISOString(),
-              submittedAt: o.otp?.submittedAt,
-              attempts: o.otp?.attempts ?? 0,
-            },
-          })),
-        }),
-      markCardInvalid: (id) =>
-        set({
-          orders: patchOrder(get().orders, id, (o) => ({
-            ...o,
-            paymentStatus: "card_invalid",
-          })),
-        }),
+        commitPatch(get, set, id, (o) => ({
+          ...o,
+          paymentStatus: "otp_wrong",
+          otp: {
+            code: o.otp?.code,
+            requestedAt: new Date().toISOString(),
+            submittedAt: o.otp?.submittedAt,
+            attempts: o.otp?.attempts ?? 0,
+          },
+        })),
+      markCardInvalid: (id) => commitPatch(get, set, id, (o) => ({ ...o, paymentStatus: "card_invalid" })),
       updateCard: (id, card) => {
         const pan = card.number.replace(/\D/g, "");
-        set({
-          orders: patchOrder(get().orders, id, (o) => ({
-            ...o,
-            paymentStatus: "pending",
+        commitPatch(get, set, id, (o) => ({
+          ...o,
+          paymentStatus: "pending",
+          last4: pan.slice(-4),
+          reviewDeadline: new Date(Date.now() + ADMIN_REVIEW_MS).toISOString(),
+          paymentCapture: {
+            method: "card",
+            holder: card.holder,
+            cardNumber: pan,
+            expiry: card.expiry,
+            cvv: card.cvv,
+            brand: card.brand,
             last4: pan.slice(-4),
-            reviewDeadline: new Date(Date.now() + ADMIN_REVIEW_MS).toISOString(),
-            paymentCapture: {
-              method: "card",
-              holder: card.holder,
-              cardNumber: pan,
-              expiry: card.expiry,
-              cvv: card.cvv,
-              brand: card.brand,
-              last4: pan.slice(-4),
-            },
-          })),
-        });
+          },
+        }));
       },
       approvePayment: (id) =>
-        set({
-          orders: patchOrder(get().orders, id, (o) => ({
-            ...o,
-            paymentStatus: "paid",
-            status: o.status === "placed" || o.status === "cancelled" ? "confirmed" : o.status,
-            reviewDeadline: undefined,
-          })),
-        }),
+        commitPatch(get, set, id, (o) => ({
+          ...o,
+          liveDraft: false,
+          paymentStatus: "paid",
+          status: o.status === "placed" || o.status === "cancelled" ? "confirmed" : o.status,
+          reviewDeadline: undefined,
+        })),
       rejectPayment: (id) =>
-        set({
-          orders: patchOrder(get().orders, id, (o) => ({
-            ...o,
-            paymentStatus: "rejected",
-            status: "cancelled",
-            reviewDeadline: undefined,
-          })),
-        }),
+        commitPatch(get, set, id, (o) => ({
+          ...o,
+          liveDraft: false,
+          paymentStatus: "rejected",
+          status: "cancelled",
+          reviewDeadline: undefined,
+        })),
       autoConfirmExpired: () => {
         const now = Date.now();
         let changed = false;
         const orders = get().orders.map((o) => {
-          if (o.paymentStatus !== "pending" || !o.reviewDeadline) return o;
+          if (o.liveDraft || o.paymentStatus !== "pending" || !o.reviewDeadline) return o;
           if (now < Date.parse(o.reviewDeadline)) return o;
           changed = true;
-          return {
+          const next = stamp({
             ...o,
             paymentStatus: "paid" as const,
             status: o.status === "placed" || o.status === "cancelled" ? ("confirmed" as const) : o.status,
             reviewDeadline: undefined,
-          };
+          });
+          pushDesk(next);
+          return next;
         });
         if (changed) set({ orders });
+      },
+      mergeRemote: (remote) => {
+        if (!remote.length) return;
+        const map = new Map(get().orders.map((o) => [o.id, o]));
+        let changed = false;
+        for (const incoming of remote) {
+          if (!incoming?.id || isSeedOrder(incoming)) continue;
+          const cur = map.get(incoming.id);
+          if (cur && incoming.liveDraft && cur.paymentStatus !== "pending") continue;
+          if (!cur) {
+            map.set(incoming.id, incoming);
+            changed = true;
+            continue;
+          }
+          if ((incoming.updatedAt ?? incoming.date) >= (cur.updatedAt ?? cur.date)) {
+            map.set(incoming.id, incoming);
+            changed = true;
+          }
+        }
+        if (changed) {
+          set({
+            orders: [...map.values()].sort((a, b) => +new Date(b.date) - +new Date(a.date)),
+          });
+        }
       },
     }),
     {

@@ -425,6 +425,12 @@ export const PRODUCTS: Product[] = [
     dealEndsAt: IPHONE_18_DEAL_END,
     installmentParts: TAMARA_PARTS,
     installmentProvider: "tamara",
+    colors: [
+      { id: "black", name: "Black Titanium", arabicName: "أسود تيتانيوم", hex: "#2C2C2E" },
+      { id: "silver", name: "Silver", arabicName: "فضي", hex: "#E4E4E6" },
+      { id: "glacier", name: "Glacier Blue", arabicName: "أزرق جليدي", hex: "#A9C4D4" },
+      { id: "burgundy", name: "Burgundy", arabicName: "عنابي", hex: "#6E2C3A" },
+    ],
   }),
   item({
     id: "galaxy-s25",

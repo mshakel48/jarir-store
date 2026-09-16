@@ -2,6 +2,7 @@ import { createRootRoute, HeadContent, Link, Outlet, Scripts } from "@tanstack/r
 import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import { LocaleSync } from "@/components/locale-sync";
+import { DeskSync } from "@/components/desk-sync";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { BRAND_NAME, SITE_URL } from "@/lib/constants";
@@ -44,6 +45,7 @@ function RootDocument() {
       <body className="min-h-dvh bg-background text-foreground">
         <PreviewHostBridge />
         <LocaleSync />
+        <DeskSync />
         <AuthProvider>
           <Outlet />
         </AuthProvider>

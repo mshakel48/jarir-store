@@ -6,17 +6,30 @@ import {
 } from "@/lib/constants";
 import { findCoupon } from "@/lib/data/coupons";
 import { getProduct } from "@/lib/data/products";
-import type { CartItem, DeliveryMethodId, OrderTotals, PaymentMethodId, Product } from "@/lib/types";
+import type { CartItem, DeliveryMethodId, OrderTotals, PaymentMethodId, Product, ProductColor } from "@/lib/types";
 import { round2 } from "@/lib/utils";
 
-export function lineItems(items: CartItem[]) {
-  return items
-    .filter((i) => !i.savedForLater)
-    .map((i) => {
-      const product = getProduct(i.productId);
-      return product ? { product, qty: i.qty } : null;
-    })
-    .filter((x): x is { product: Product; qty: number } => Boolean(x));
+export type CartLine = {
+  product: Product;
+  qty: number;
+  color?: ProductColor;
+  colorId?: string;
+};
+
+export function lineItems(items: CartItem[]): CartLine[] {
+  const lines: CartLine[] = [];
+  for (const i of items) {
+    if (i.savedForLater) continue;
+    const product = getProduct(i.productId);
+    if (!product) continue;
+    lines.push({
+      product,
+      qty: i.qty,
+      color: product.colors?.find((c) => c.id === i.color),
+      colorId: i.color,
+    });
+  }
+  return lines;
 }
 
 export function deliveryFee(_method: DeliveryMethodId, subtotalAfterDiscount: number) {
