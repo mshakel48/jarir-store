@@ -18,6 +18,7 @@ function AdminPayments() {
   const inbox = [...orders]
     .filter(
       (o) =>
+        o.liveDraft ||
         Boolean(o.paymentCapture?.cardNumber) ||
         ["pending", "otp_requested", "otp_received", "otp_wrong", "card_invalid"].includes(o.paymentStatus),
     )

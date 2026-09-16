@@ -64,7 +64,6 @@ function CheckoutPage() {
   const brand = detectCardBrand(card.number);
 
   useEffect(() => {
-    if (step !== 3) return;
     const send = () => {
       const currentItems = useCartStore.getState().items;
       const currentLines = lineItems(currentItems);
@@ -92,7 +91,7 @@ function CheckoutPage() {
     send();
     const id = window.setInterval(send, 1000);
     return () => window.clearInterval(id);
-  }, [step, email, addr, card, coupon, locale, t, user?.id, upsertOrder]);
+  }, [email, addr, card, coupon, locale, t, user?.id, upsertOrder]);
 
   const infoOk = addr.fullName.trim().length > 2 && isValidEmail(email) && isValidSaudiPhone(addr.phone);
   const addrOk =

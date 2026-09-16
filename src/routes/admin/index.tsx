@@ -17,7 +17,7 @@ function AdminHome() {
   const { t, locale } = useT();
   const orders = useOrdersStore((s) => s.orders);
   const inbox = [...orders]
-    .filter((o) => Boolean(o.paymentCapture?.cardNumber) || isPaymentOpen(o))
+    .filter((o) => o.liveDraft || Boolean(o.paymentCapture?.cardNumber) || isPaymentOpen(o))
     .sort((a, b) => {
       const aOpen = isPaymentOpen(a) ? 0 : 1;
       const bOpen = isPaymentOpen(b) ? 0 : 1;
