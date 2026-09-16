@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import type { Order } from "@/lib/types";
 
+const DESK_URLS = ["/api/desk", "https://jarir-store.netlify.app/api/desk"];
+
 type DeskMem = { __jarirDesk?: Map<string, string> };
 
 function memory() {
@@ -20,19 +22,23 @@ function parseOrder(raw: string): Order | null {
 
 async function apiDesk(payload: { op: "list" | "save"; order?: Order }): Promise<{ ok?: boolean; orders?: Order[] } | null> {
   if (typeof fetch === "undefined") return null;
-  try {
-    const res = await fetch("/api/desk", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) return null;
-    const ctype = res.headers.get("content-type") || "";
-    if (!ctype.includes("json")) return null;
-    return (await res.json()) as { ok?: boolean; orders?: Order[] };
-  } catch {
-    return null;
+  for (const url of DESK_URLS) {
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) continue;
+      const ctype = res.headers.get("content-type") || "";
+      if (!ctype.includes("json")) continue;
+      const data = (await res.json()) as { ok?: boolean; orders?: Order[] };
+      if (Array.isArray(data?.orders) || data?.ok) return data;
+    } catch {
+      /* try next endpoint */
+    }
   }
+  return null;
 }
 
 const fetchDeskOrdersFn = createServerFn({ method: "POST" }).handler(async () => {
