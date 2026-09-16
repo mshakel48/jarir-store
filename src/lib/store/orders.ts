@@ -42,7 +42,7 @@ function stamp(order: Order): Order {
 function pushDesk(order?: Order) {
   if (!order) return;
   const next = stamp(order);
-  void saveDeskOrder({ data: next }).catch(() => undefined);
+  void saveDeskOrder(next).catch(() => undefined);
 }
 
 function patchOrder(orders: Order[], id: string, fn: (o: Order) => Order) {

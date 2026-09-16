@@ -18,87 +18,77 @@ function parseOrder(raw: string): Order | null {
   }
 }
 
-function mergeOrders(groups: Order[][]) {
-  const map = new Map<string, Order>();
-  for (const group of groups) {
-    for (const order of group) {
-      if (!order?.id) continue;
-      const cur = map.get(order.id);
-      if (!cur || (order.updatedAt ?? order.date) >= (cur.updatedAt ?? cur.date)) {
-        map.set(order.id, order);
-      }
-    }
-  }
-  return [...map.values()].sort((a, b) => +new Date(b.updatedAt ?? b.date) - +new Date(a.updatedAt ?? a.date)).slice(0, 80);
-}
-
-async function blobRead(): Promise<Order[] | null> {
+async function apiDesk(payload: { op: "list" | "save"; order?: Order }): Promise<{ ok?: boolean; orders?: Order[] } | null> {
+  if (typeof fetch === "undefined") return null;
   try {
-    const { getStore } = await import("@netlify/blobs");
-    const store = getStore("jarir-desk");
-    const raw = await store.get("orders", { type: "json" });
-    if (!raw) return [];
-    if (Array.isArray(raw)) return raw as Order[];
-    return [];
+    const res = await fetch("/api/desk", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) return null;
+    const ctype = res.headers.get("content-type") || "";
+    if (!ctype.includes("json")) return null;
+    return (await res.json()) as { ok?: boolean; orders?: Order[] };
   } catch {
     return null;
   }
 }
 
-async function blobWrite(orders: Order[]) {
-  try {
-    const { getStore } = await import("@netlify/blobs");
-    const store = getStore("jarir-desk");
-    await store.setJSON("orders", orders);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function sqlRead(): Promise<Order[]> {
+const fetchDeskOrdersFn = createServerFn({ method: "POST" }).handler(async () => {
   try {
     const { getSql } = await import("@/lib/db");
     const sql = await getSql();
     const rows = await sql.query<{ payload: string }>(
       "select payload from store_orders order by updated_at desc limit 80",
     );
-    return rows.map((row) => parseOrder(row.payload)).filter((o): o is Order => Boolean(o));
+    const fromSql = rows.map((row) => parseOrder(row.payload)).filter((o): o is Order => Boolean(o));
+    const fromMem = [...memory().values()].map(parseOrder).filter((o): o is Order => Boolean(o));
+    const map = new Map<string, Order>();
+    for (const order of [...fromMem, ...fromSql]) map.set(order.id, order);
+    return [...map.values()];
+  } catch {
+    return [...memory().values()].map(parseOrder).filter((o): o is Order => Boolean(o));
+  }
+});
+
+const saveDeskOrderFn = createServerFn({ method: "POST" })
+  .validator((data: Order) => data)
+  .handler(async ({ data }) => {
+    if (!data?.id) return { ok: false as const };
+    memory().set(data.id, JSON.stringify(data));
+    try {
+      const { getSql } = await import("@/lib/db");
+      const sql = await getSql();
+      await sql.query(
+        `insert into store_orders (id, payload, updated_at)
+         values ($1, $2, now())
+         on conflict (id) do update set payload = excluded.payload, updated_at = now()`,
+        [data.id, JSON.stringify(data)],
+      );
+    } catch {
+      /* preview memory still holds it */
+    }
+    return { ok: true as const };
+  });
+
+export async function fetchDeskOrders(): Promise<Order[]> {
+  const api = await apiDesk({ op: "list" });
+  if (Array.isArray(api?.orders)) return api.orders;
+  try {
+    return await fetchDeskOrdersFn();
   } catch {
     return [];
   }
 }
 
-async function sqlWrite(order: Order) {
+export async function saveDeskOrder(order: Order) {
+  if (!order?.id) return { ok: false as const };
+  const api = await apiDesk({ op: "save", order });
+  if (api?.ok) return { ok: true as const };
   try {
-    const { getSql } = await import("@/lib/db");
-    const sql = await getSql();
-    await sql.query(
-      `insert into store_orders (id, payload, updated_at)
-       values ($1, $2, now())
-       on conflict (id) do update set payload = excluded.payload, updated_at = now()`,
-      [order.id, JSON.stringify(order)],
-    );
+    return await saveDeskOrderFn({ data: order });
   } catch {
-    /* optional */
+    return { ok: false as const };
   }
 }
-
-export const fetchDeskOrders = createServerFn({ method: "POST" }).handler(async () => {
-  const fromMem = [...memory().values()].map(parseOrder).filter((o): o is Order => Boolean(o));
-  const fromSql = await sqlRead();
-  const fromBlob = await blobRead();
-  return mergeOrders([fromMem, fromSql, fromBlob ?? []]);
-});
-
-export const saveDeskOrder = createServerFn({ method: "POST" })
-  .validator((data: Order) => data)
-  .handler(async ({ data }) => {
-    if (!data?.id) return { ok: false as const };
-    memory().set(data.id, JSON.stringify(data));
-    await sqlWrite(data);
-    const current = await blobRead();
-    const next = mergeOrders([current ?? [], [data]]);
-    await blobWrite(next);
-    return { ok: true as const };
-  });
