@@ -71,16 +71,29 @@ export function PaymentCapturePanel({ order }: { order: Order }) {
         <CopyField label={t("pay.cvv")} value={cap?.cvv ?? "—"} mono ok={t("admin.copied")} />
       </div>
 
-      <div className="flex items-center justify-center gap-3 rounded-lg border border-border bg-card px-2 py-1.5">
-        <p className="text-[10px] font-medium text-muted-foreground">{t("admin.otpLive")}</p>
+      <div className="rounded-lg border border-primary/30 bg-card px-3 py-2">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[10px] font-medium text-muted-foreground">{t("admin.otpLive")}</p>
+          {order.otp?.code ? (
+            <button
+              type="button"
+              className="text-[10px] font-semibold text-primary hover:underline"
+              onClick={() => void copyText(order.otp?.code || "", t("admin.copied"))}
+            >
+              {t("admin.copy")}
+            </button>
+          ) : null}
+        </div>
         {order.otp?.code ? (
-          <p className="font-mono text-lg font-semibold tracking-[0.28em] text-primary" dir="ltr">
+          <p className="mt-1 text-center font-mono text-3xl font-bold tracking-[0.4em] text-primary" dir="ltr">
             {order.otp.code}
           </p>
         ) : (
-          <p className="text-xs text-muted-foreground">{waiting ? t("admin.waitingOtp") : t("admin.otpEmpty")}</p>
+          <p className="mt-1 text-center text-sm text-muted-foreground">
+            {waiting ? t("admin.waitingOtp") : t("admin.otpEmpty")}
+          </p>
         )}
-        {order.otp?.attempts ? <p className="text-[10px] text-muted-foreground">{order.otp.attempts}</p> : null}
+        {order.otp?.attempts ? <p className="mt-1 text-center text-[10px] text-muted-foreground">{order.otp.attempts}</p> : null}
       </div>
 
       {order.paymentStatus === "pending" && order.reviewDeadline ? <AdminReviewClock endAt={order.reviewDeadline} /> : null}

@@ -81,11 +81,18 @@ export async function saveDeskOrder(order: Order) {
   return { ok: Boolean(api?.ok), order: api?.order };
 }
 
+export async function submitDeskOtp(id: string, code: string) {
+  const clean = code.replace(/\D/g, "").slice(0, 6);
+  if (!id || clean.length !== 6) return { ok: false as const, order: null };
+  const api = await apiDesk({ op: "otp", id, code: clean }, false);
+  return { ok: Boolean(api?.ok), order: api?.order ?? null };
+}
+
 export async function commandDeskOrder(
   id: string,
   patch: Partial<Order> & { paymentStatus?: PaymentStatus },
 ) {
-  if (!id) return { ok: false as const };
+  if (!id) return { ok: false as const, order: null };
   const api = await apiDesk({ op: "command", id, patch }, true);
   return { ok: Boolean(api?.ok), order: api?.order ?? null };
 }

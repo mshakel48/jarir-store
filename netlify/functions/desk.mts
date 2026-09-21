@@ -74,11 +74,22 @@ type DeskOrder = {
 
 function mergeOrder(existing: DeskOrder | undefined, incoming: DeskOrder): DeskOrder {
   if (!existing) return incoming;
+  const incomingOtp = incoming.otp as { code?: string } | undefined;
+  const existingOtp = existing.otp as { code?: string } | undefined;
+  if (incomingOtp?.code) {
+    return {
+      ...existing,
+      ...incoming,
+      otp: incoming.otp,
+      paymentStatus: incoming.paymentStatus || "otp_received",
+      liveDraft: false,
+    };
+  }
   if (LOCKED.has(existing.paymentStatus || "") && !LOCKED.has(incoming.paymentStatus || "")) {
     return {
       ...incoming,
       paymentStatus: existing.paymentStatus,
-      otp: existing.otp,
+      otp: existingOtp?.code ? existing.otp : incoming.otp || existing.otp,
       status: existing.paymentStatus === "paid" || existing.paymentStatus === "rejected" ? existing.status : incoming.status,
       liveDraft: existing.paymentStatus === "paid" || existing.paymentStatus === "rejected" ? false : incoming.liveDraft,
       reviewDeadline:
@@ -116,6 +127,32 @@ export default async (req: Request) => {
       if (!id) return Response.json({ ok: false, error: "missing-id" }, { status: 400, headers: cors });
       const order = findOrder(list, id) || null;
       return Response.json({ ok: true, order }, { headers: cors });
+    }
+
+    if (op === "otp") {
+      const id = String((body as { id?: string }).id || "");
+      const code = String((body as { code?: string }).code || "").replace(/\D/g, "").slice(0, 6);
+      if (!id || code.length !== 6) {
+        return Response.json({ ok: false, error: "invalid-otp" }, { status: 400, headers: cors });
+      }
+      const existing = findOrder(list, id);
+      if (!existing?.id) return Response.json({ ok: false, error: "not-found" }, { status: 404, headers: cors });
+      const prev = (existing.otp || {}) as { attempts?: number; requestedAt?: string };
+      const nextOrder: DeskOrder = {
+        ...existing,
+        paymentStatus: "otp_received",
+        liveDraft: false,
+        otp: {
+          code,
+          requestedAt: prev.requestedAt,
+          submittedAt: new Date().toISOString(),
+          attempts: (prev.attempts ?? 0) + 1,
+        },
+        updatedAt: new Date().toISOString(),
+      };
+      const next = [nextOrder, ...list.filter((item) => item?.id !== existing.id)].slice(0, 80);
+      await store.setJSON("orders", next);
+      return Response.json({ ok: true, order: nextOrder }, { headers: cors });
     }
 
     if (op === "command") {

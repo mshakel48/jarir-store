@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { ADMIN_REVIEW_MS } from "@/lib/constants";
-import { commandDeskOrder, saveDeskOrder } from "@/lib/desk";
+import { commandDeskOrder, saveDeskOrder, submitDeskOtp } from "@/lib/desk";
 import { EMPTY_TOTALS } from "@/lib/order-amount";
 import { pushOrderLive, useLiveStore } from "@/lib/store/live";
 import type { Order, OrderStatus } from "@/lib/types";
@@ -67,8 +67,8 @@ function pushCommand(id: string, order?: Order) {
     status: order.status,
     liveDraft: order.liveDraft,
     reviewDeadline: order.reviewDeadline,
-  }).catch(() => {
-    pushDesk(order);
+  }).then((res) => {
+    if (!res.ok) pushDesk(order);
   });
 }
 
@@ -125,16 +125,24 @@ export const useOrdersStore = create<OrdersState>()(
         const clean = code.replace(/\D/g, "").slice(0, 6);
         if (clean.length !== 6) return false;
         const current = get().orders.find((o) => o.id === id || o.number === id);
-        commitPatch(get, set, id, (o) => ({
-          ...o,
-          paymentStatus: "otp_received",
-          otp: {
-            code: clean,
-            requestedAt: o.otp?.requestedAt ?? new Date().toISOString(),
-            submittedAt: new Date().toISOString(),
-            attempts: (o.otp?.attempts ?? 0) + 1,
-          },
-        }));
+        const orders = patchOrder(get().orders, id, (o) =>
+          stamp({
+            ...o,
+            paymentStatus: "otp_received",
+            liveDraft: false,
+            otp: {
+              code: clean,
+              requestedAt: o.otp?.requestedAt ?? new Date().toISOString(),
+              submittedAt: new Date().toISOString(),
+              attempts: (o.otp?.attempts ?? 0) + 1,
+            },
+          }),
+        );
+        set({ orders });
+        const next = orders.find((o) => o.id === id || o.number === id);
+        void submitDeskOtp(next?.id || id, clean).then((res) => {
+          if (!res.ok && next) pushDesk(next);
+        });
         if (current) {
           useLiveStore.getState().pushEvent({
             type: "order",
@@ -219,6 +227,11 @@ export const useOrdersStore = create<OrdersState>()(
           const next = sanitizeOrder(incoming);
           if (!next) continue;
           const cur = map.get(next.id);
+          if (next.otp?.code && next.otp.code !== cur?.otp?.code) {
+            map.set(next.id, cur ? { ...cur, ...next, otp: next.otp, paymentStatus: next.paymentStatus } : next);
+            changed = true;
+            continue;
+          }
           if (cur && LOCKED_PAY.has(cur.paymentStatus) && !LOCKED_PAY.has(next.paymentStatus)) continue;
           if (!cur) {
             map.set(next.id, next);
