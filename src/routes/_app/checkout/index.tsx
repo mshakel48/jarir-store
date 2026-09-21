@@ -7,7 +7,7 @@ import { SummaryRows } from "@/components/cart/summary-rows";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ADMIN_REVIEW_MS, DEMO_PAYMENTS, EXPRESS_DELIVERY_FEE, FREE_DELIVERY_MIN } from "@/lib/constants";
+import { ADMIN_REVIEW_MS, DEMO_PAYMENTS, EXPRESS_DELIVERY_FEE, FREE_DELIVERY_MIN, IPHONE_18_COUPON } from "@/lib/constants";
 import { CITY_IDS } from "@/lib/data/stores";
 import { lineItems, calcTotals } from "@/lib/data/totals";
 import { detectCardBrand, digitsOnly, formatMoney, formatSaudiPhone, isValidEmail, isValidSaudiPhone } from "@/lib/format";
@@ -326,7 +326,7 @@ function CheckoutPage() {
             </li>
           ))}
         </ul>
-        <SummaryRows totals={totals} locale={locale} t={t} />
+        <SummaryRows totals={totals} locale={locale} t={t} showTamara={coupon === IPHONE_18_COUPON} />
         <p className="mt-3 text-xs text-muted-foreground">
           {t("pay.selected")}: {t("pay.card")}
         </p>

@@ -7,7 +7,7 @@ import { Price } from "@/components/price";
 import { Qty } from "@/components/qty";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { FREE_DELIVERY_MIN } from "@/lib/constants";
+import { FREE_DELIVERY_MIN, IPHONE_18_COUPON } from "@/lib/constants";
 import { lineItems } from "@/lib/data/totals";
 import { getProduct, productName } from "@/lib/data/products";
 import { useT } from "@/lib/i18n";
@@ -31,6 +31,8 @@ function CartPage() {
   const active = items.filter((i) => !i.savedForLater);
   const saved = items.filter((i) => i.savedForLater);
   const remain = Math.max(0, FREE_DELIVERY_MIN - (totals.subtotal - totals.discount));
+  const hasIphone = active.some((i) => i.productId === "iphone-18");
+  const tamaraDeal = coupon === IPHONE_18_COUPON && hasIphone;
 
   if (!items.length) {
     return <EmptyState icon={ShoppingBag} title={t("cart.empty")} hint={t("cart.emptyHint")} action={t("cart.continue")} />;
@@ -104,7 +106,10 @@ function CartPage() {
         <p className="mb-4 text-sm text-muted-foreground">
           {remain > 0 ? t("cart.freeShip", { n: Math.ceil(remain) }) : t("cart.freeUnlocked")}
         </p>
-        <SummaryRows totals={totals} locale={locale} t={t} />
+        <SummaryRows totals={totals} locale={locale} t={t} showTamara={tamaraDeal} />
+        {hasIphone && coupon !== IPHONE_18_COUPON ? (
+          <p className="mt-3 text-xs text-primary">{t("cart.couponHint", { code: IPHONE_18_COUPON })}</p>
+        ) : null}
         <form
           className="mt-4 flex gap-2"
           onSubmit={(e) => {

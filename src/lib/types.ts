@@ -191,6 +191,7 @@ export interface Coupon {
   type: "percent";
   value: number;
   categories?: CategorySlug[];
+  productIds?: string[];
   minSubtotal?: number;
   labelEn: string;
   labelAr: string;

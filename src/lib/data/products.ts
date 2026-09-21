@@ -408,8 +408,8 @@ export const PRODUCTS: Product[] = [
     price: IPHONE_18_PRICE,
     rating: 4.9,
     reviewCount: 86,
-    description: "Apple iPhone 18 Pro Max 1 TB. 6.9\" Super Retina XDR, A19 Pro, 5x Telephoto. Official KSA price. Tamara 24-payment offer shown; pay by credit card.",
-    arabicDescription: "أبل آيفون 18 Pro Max بسعة 1 تيرابايت. شاشة ٦٫٩ إنش Super Retina XDR ومعالج A19 Pro وزوم ٥x. السعر الرسمي في السعودية. عرض تمارا على ٢٤ دفعة، والدفع بالبطاقة الائتمانية.",
+    description: "Apple iPhone 18 Pro Max 1 TB. Use coupon IPHONE25 for 25% off (6,824.25 SAR), then Tamara 24 payments of 284.34 SAR. Pay by credit card.",
+    arabicDescription: "أبل آيفون 18 Pro Max بسعة 1 تيرابايت. استخدم كود IPHONE25 لخصم ٢٥٪ (٦٬٨٢٤٫٢٥ ر.س) ثم تقسيط تمارا على ٢٤ دفعة × ٢٨٤٫٣٤ ر.س. الدفع بالبطاقة الائتمانية.",
     specifications: [
       spec("Storage", "التخزين", "1 TB", "1 تيرا"),
       spec("Display", "الشاشة", "6.9\" Super Retina XDR"),

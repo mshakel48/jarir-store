@@ -13,6 +13,8 @@ import { getProduct, PRODUCTS } from "@/lib/data/products";
 import { formatMoney } from "@/lib/format";
 import { getDealEnd, useCountdown, useHydrated } from "@/lib/hooks";
 import { useT } from "@/lib/i18n";
+import { IPHONE_18_COUPON, IPHONE_18_SALE, TAMARA_PARTS } from "@/lib/constants";
+import { installmentAmount } from "@/lib/payments";
 import { useViewedStore } from "@/lib/store/viewed";
 
 export const Route = createFileRoute("/_app/")({
@@ -36,6 +38,7 @@ function HomePage() {
   const pad = (n: number) => String(n).padStart(2, "0");
   const deal = getProduct("iphone-18");
   const brands = uniqueBrandPairs().slice(0, 12);
+  const salePer = installmentAmount(IPHONE_18_SALE, TAMARA_PARTS);
 
   return (
     <div>
@@ -64,14 +67,17 @@ function HomePage() {
                 <span className="rounded-md bg-muted px-4 py-1.5 text-sm font-semibold">{t("home.promoQuant")}</span>
                 <p className="text-lg font-semibold">{locale === "ar" ? deal.arabicName : deal.name}</p>
                 <p className="flex items-baseline gap-2 font-extrabold">
-                  {deal.oldPrice ? (
-                    <span className="text-xl text-muted-foreground line-through decoration-2">
-                      {formatMoney(deal.oldPrice, locale)}
-                    </span>
-                  ) : null}
-                  <span className="text-4xl text-primary md:text-5xl">{formatMoney(deal.price, locale)}</span>
+                  <span className="text-xl text-muted-foreground line-through decoration-2">
+                    {formatMoney(deal.price, locale)}
+                  </span>
+                  <span className="text-4xl text-primary md:text-5xl">{formatMoney(IPHONE_18_SALE, locale)}</span>
                 </p>
-                <p className="text-sm text-muted-foreground">{t("home.promoVerbal")}</p>
+                <p className="rounded-md bg-primary/10 px-3 py-1 font-mono text-sm font-bold tracking-wide text-primary">
+                  {IPHONE_18_COUPON}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {t("home.promoVerbal", { n: formatMoney(salePer, locale) })}
+                </p>
                 {deal.dealEndsAt ? <DealCountdown endAt={deal.dealEndsAt} /> : null}
               </div>
             </Link>

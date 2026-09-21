@@ -41,9 +41,11 @@ export function couponDiscount(products: { product: Product; qty: number }[], co
   if (!code) return 0;
   const coupon = findCoupon(code);
   if (!coupon) return 0;
-  const eligible = products.filter((l) =>
-    coupon.categories ? coupon.categories.includes(l.product.category) : true,
-  );
+  const eligible = products.filter((l) => {
+    if (coupon.productIds?.length) return coupon.productIds.includes(l.product.id);
+    if (coupon.categories) return coupon.categories.includes(l.product.category);
+    return true;
+  });
   const base = eligible.reduce((s, l) => s + l.product.price * l.qty, 0);
   const subtotal = products.reduce((s, l) => s + l.product.price * l.qty, 0);
   if (coupon.minSubtotal && subtotal < coupon.minSubtotal) return 0;

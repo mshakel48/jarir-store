@@ -1,15 +1,20 @@
 import { formatMoney } from "@/lib/format";
+import { installmentAmount } from "@/lib/payments";
+import { TAMARA_PARTS } from "@/lib/constants";
 import type { Locale, OrderTotals } from "@/lib/types";
 
 export function SummaryRows({
   totals,
   locale,
   t,
+  showTamara,
 }: {
   totals: OrderTotals;
   locale: Locale;
-  t: (k: string) => string;
+  t: (k: string, vars?: Record<string, string | number>) => string;
+  showTamara?: boolean;
 }) {
+  const per = installmentAmount(totals.total, TAMARA_PARTS);
   return (
     <dl className="space-y-2 text-sm">
       <div className="flex justify-between">
@@ -38,6 +43,12 @@ export function SummaryRows({
         <dt>{t("cart.total")}</dt>
         <dd className="tabular-nums">{formatMoney(totals.total, locale)}</dd>
       </div>
+      {showTamara ? (
+        <div className="flex justify-between text-primary">
+          <dt>{t("cart.tamaraPay", { n: TAMARA_PARTS })}</dt>
+          <dd className="tabular-nums">{formatMoney(per, locale)}</dd>
+        </div>
+      ) : null}
     </dl>
   );
 }

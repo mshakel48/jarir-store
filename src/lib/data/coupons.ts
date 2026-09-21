@@ -1,6 +1,15 @@
+import { IPHONE_18_COUPON, IPHONE_18_COUPON_PCT } from "@/lib/constants";
 import type { Coupon } from "@/lib/types";
 
 export const COUPONS: Coupon[] = [
+  {
+    code: IPHONE_18_COUPON,
+    type: "percent",
+    value: IPHONE_18_COUPON_PCT,
+    productIds: ["iphone-18"],
+    labelEn: "25% off iPhone 18 Pro Max (1 TB), then Tamara 24 payments",
+    labelAr: "خصم ٢٥٪ على آيفون 18 Pro Max (1 تيرا) ثم تقسيط تمارا على ٢٤ دفعة",
+  },
   {
     code: "JARRIR10",
     type: "percent",

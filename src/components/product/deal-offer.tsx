@@ -1,9 +1,12 @@
 import { Clock } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { IPHONE_18_COUPON, IPHONE_18_COUPON_PCT, IPHONE_18_SALE, TAMARA_PARTS } from "@/lib/constants";
 import { useCountdown, useHydrated } from "@/lib/hooks";
 import { formatMoney } from "@/lib/format";
 import { useT } from "@/lib/i18n";
 import { installmentAmount } from "@/lib/payments";
-import { TAMARA_PARTS } from "@/lib/constants";
+import { useCartStore } from "@/lib/store/cart";
 import type { Product } from "@/lib/types";
 
 export function isDealLive(product: Product) {
@@ -25,10 +28,7 @@ export function DealCountdown({ endAt, compact }: { endAt: string; compact?: boo
       <span className="text-xs font-medium text-muted-foreground">{t("product.endsIn")}</span>
       <span className="flex gap-1 font-semibold tabular-nums">
         {units.map((n, i) => (
-          <span
-            key={i}
-            className="rounded-md bg-primary px-1.5 py-0.5 text-[11px] text-primary-foreground"
-          >
+          <span key={i} className="rounded-md bg-primary px-1.5 py-0.5 text-[11px] text-primary-foreground">
             {pad(n)}
           </span>
         ))}
@@ -39,15 +39,59 @@ export function DealCountdown({ endAt, compact }: { endAt: string; compact?: boo
 
 export function BnplOffer({ product }: { product: Product }) {
   const { t, locale } = useT();
+  const applyCoupon = useCartStore((s) => s.applyCoupon);
+  const coupon = useCartStore((s) => s.coupon);
   const parts = product.installmentParts || TAMARA_PARTS;
-  const per = installmentAmount(product.price, parts);
+  const isIphone = product.id === "iphone-18";
+  const sale = isIphone ? IPHONE_18_SALE : product.price;
+  const per = installmentAmount(sale, parts);
+  const listedPer = installmentAmount(product.price, parts);
+
   return (
     <div className="mt-4 space-y-2 rounded-2xl border border-primary/30 bg-primary/5 p-4 text-sm">
       <p className="font-semibold text-primary">{t("pay.tamara")}</p>
-      <p className="font-medium">{t("product.tamaraPlan", { n: formatMoney(per, locale) })}</p>
-      <p className="text-xs text-muted-foreground">
-        {parts} × {formatMoney(per, locale)} = {formatMoney(product.price, locale)}
-      </p>
+      {isIphone ? (
+        <>
+          <p className="font-medium">{t("product.couponOff")}</p>
+          <p className="flex flex-wrap items-baseline gap-2">
+            <span className="text-muted-foreground line-through">{formatMoney(product.price, locale)}</span>
+            <span className="text-lg font-bold text-primary">{formatMoney(sale, locale)}</span>
+            <span className="text-xs text-muted-foreground">−{IPHONE_18_COUPON_PCT}%</span>
+          </p>
+          <p className="font-medium">{t("product.tamaraAfter", { n: formatMoney(per, locale) })}</p>
+          <p className="text-xs text-muted-foreground">
+            {parts} × {formatMoney(per, locale)} = {formatMoney(sale, locale)}
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <code className="rounded-md bg-card px-2 py-1 font-mono text-sm font-semibold tracking-wide">{IPHONE_18_COUPON}</code>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                void navigator.clipboard.writeText(IPHONE_18_COUPON);
+                toast.success(t("admin.copied"));
+              }}
+            >
+              {t("product.copyCode")}
+            </Button>
+            {coupon !== IPHONE_18_COUPON ? (
+              <Button type="button" size="sm" onClick={() => applyCoupon(IPHONE_18_COUPON)}>
+                {t("cart.apply")}
+              </Button>
+            ) : (
+              <span className="text-xs text-success">{t("cart.couponOk")}</span>
+            )}
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="font-medium">{t("product.tamaraPlan", { n: formatMoney(listedPer, locale) })}</p>
+          <p className="text-xs text-muted-foreground">
+            {parts} × {formatMoney(listedPer, locale)} = {formatMoney(product.price, locale)}
+          </p>
+        </>
+      )}
       {product.dealEndsAt ? <DealCountdown endAt={product.dealEndsAt} /> : null}
       <p className="text-muted-foreground">{t("product.orCard")}</p>
     </div>
