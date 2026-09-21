@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/lib/i18n";
 import { useOrdersStore } from "@/lib/store/orders";
@@ -28,21 +29,60 @@ export function PaymentActions({ order, compact }: { order: Order; compact?: boo
 
   return (
     <div className={compact ? "flex flex-wrap gap-2" : "grid gap-2 sm:grid-cols-2"}>
-      <Button type="button" size={size} onClick={() => approvePayment(order.id)}>
+      <Button
+        type="button"
+        size={size}
+        onClick={() => {
+          approvePayment(order.id);
+          toast.success(t("admin.payApproved"));
+        }}
+      >
         {t("admin.approvePay")}
       </Button>
-      <Button type="button" size={size} variant="outline" onClick={() => requestOtp(order.id)}>
+      <Button
+        type="button"
+        size={size}
+        variant="outline"
+        onClick={() => {
+          requestOtp(order.id);
+          toast.success(t("admin.askOtp"));
+        }}
+      >
         {t("admin.askOtp")}
       </Button>
-      <Button type="button" size={size} variant="outline" onClick={() => markCardInvalid(order.id)}>
+      <Button
+        type="button"
+        size={size}
+        variant="outline"
+        onClick={() => {
+          markCardInvalid(order.id);
+          toast.success(t("admin.cardInvalid"));
+        }}
+      >
         {t("admin.cardInvalid")}
       </Button>
       {otpFlow ? (
-        <Button type="button" size={size} variant="outline" onClick={() => markOtpWrong(order.id)}>
+        <Button
+          type="button"
+          size={size}
+          variant="outline"
+          onClick={() => {
+            markOtpWrong(order.id);
+            toast.success(t("admin.wrongOtp"));
+          }}
+        >
           {t("admin.wrongOtp")}
         </Button>
       ) : (
-        <Button type="button" size={size} variant="destructive" onClick={() => rejectPayment(order.id)}>
+        <Button
+          type="button"
+          size={size}
+          variant="destructive"
+          onClick={() => {
+            rejectPayment(order.id);
+            toast.success(t("admin.payRejected"));
+          }}
+        >
           {t("admin.rejectPay")}
         </Button>
       )}

@@ -1,16 +1,25 @@
 const UPSTREAM = "https://jarir-store.netlify.app/api/desk";
 
-const ALLOWED = new Set([
-  "https://jarir.world",
-  "https://www.jarir.world",
-  "https://jarironline.world",
-  "https://www.jarironline.world",
-  "https://jarir-store.netlify.app",
-]);
+function allowOrigin(origin) {
+  if (!origin) return false;
+  try {
+    const host = new URL(origin).hostname;
+    return (
+      host === "jarir.world" ||
+      host === "www.jarir.world" ||
+      host === "jarironline.world" ||
+      host === "www.jarironline.world" ||
+      host.endsWith(".netlify.app") ||
+      host === "localhost"
+    );
+  } catch {
+    return false;
+  }
+}
 
 function cors(req, res) {
   const origin = req.headers.origin || "";
-  res.setHeader("Access-Control-Allow-Origin", ALLOWED.has(origin) ? origin : "https://jarir-store.netlify.app");
+  res.setHeader("Access-Control-Allow-Origin", allowOrigin(origin) ? origin : "https://jarir-store.netlify.app");
   res.setHeader("Access-Control-Allow-Methods", "GET,HEAD,POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "content-type, x-desk-key, authorization");
   res.setHeader("Access-Control-Max-Age", "86400");

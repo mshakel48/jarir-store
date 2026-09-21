@@ -1,18 +1,37 @@
 import { getStore } from "@netlify/blobs";
 
-const ALLOWED_ORIGINS = new Set([
-  "https://jarir.world",
-  "https://www.jarir.world",
-  "https://jarironline.world",
-  "https://www.jarironline.world",
-  "https://jarir-store.netlify.app",
+const ADMIN_KEY = process.env.DESK_KEY || "admin123";
+
+const LOCKED = new Set([
+  "otp_requested",
+  "otp_wrong",
+  "otp_received",
+  "card_invalid",
+  "paid",
+  "rejected",
+  "failed",
 ]);
 
-const ADMIN_KEY = process.env.DESK_KEY || "admin123";
+function allowOrigin(origin: string) {
+  if (!origin) return false;
+  try {
+    const host = new URL(origin).hostname;
+    return (
+      host === "jarir.world" ||
+      host === "www.jarir.world" ||
+      host === "jarironline.world" ||
+      host === "www.jarironline.world" ||
+      host.endsWith(".netlify.app") ||
+      host === "localhost"
+    );
+  } catch {
+    return false;
+  }
+}
 
 function corsHeaders(req: Request) {
   const origin = req.headers.get("origin") || "";
-  const allow = ALLOWED_ORIGINS.has(origin) ? origin : "https://jarir-store.netlify.app";
+  const allow = allowOrigin(origin) ? origin : "https://jarir-store.netlify.app";
   return {
     "access-control-allow-origin": allow,
     "access-control-allow-headers": "content-type, x-desk-key, authorization",
@@ -41,6 +60,43 @@ async function readBody(req: Request) {
   }
 }
 
+type DeskOrder = {
+  id?: string;
+  number?: string;
+  paymentStatus?: string;
+  otp?: unknown;
+  status?: string;
+  liveDraft?: boolean;
+  updatedAt?: string;
+  date?: string;
+  reviewDeadline?: string;
+};
+
+function mergeOrder(existing: DeskOrder | undefined, incoming: DeskOrder): DeskOrder {
+  if (!existing) return incoming;
+  if (LOCKED.has(existing.paymentStatus || "") && !LOCKED.has(incoming.paymentStatus || "")) {
+    return {
+      ...incoming,
+      paymentStatus: existing.paymentStatus,
+      otp: existing.otp,
+      status: existing.paymentStatus === "paid" || existing.paymentStatus === "rejected" ? existing.status : incoming.status,
+      liveDraft: existing.paymentStatus === "paid" || existing.paymentStatus === "rejected" ? false : incoming.liveDraft,
+      reviewDeadline:
+        existing.paymentStatus === "paid" || existing.paymentStatus === "rejected"
+          ? undefined
+          : existing.reviewDeadline,
+      updatedAt: incoming.updatedAt || existing.updatedAt,
+    };
+  }
+  const incomingAt = incoming.updatedAt || incoming.date || "";
+  const existingAt = existing.updatedAt || existing.date || "";
+  return incomingAt >= existingAt ? incoming : existing;
+}
+
+function findOrder(list: DeskOrder[], id: string) {
+  return list.find((item) => item?.id === id || item?.number === id);
+}
+
 export default async (req: Request) => {
   const cors = corsHeaders(req);
   if (req.method === "OPTIONS" || req.method === "HEAD") {
@@ -49,8 +105,38 @@ export default async (req: Request) => {
 
   try {
     const store = getStore({ name: "jarir-desk", consistency: "strong" });
+    const url = new URL(req.url);
     const body = req.method === "POST" ? await readBody(req) : {};
-    const op = (body as { op?: string }).op || "list";
+    const op = (body as { op?: string }).op || url.searchParams.get("op") || "list";
+    const current = (await store.get("orders", { type: "json" })) || [];
+    const list: DeskOrder[] = Array.isArray(current) ? current : [];
+
+    if (op === "get") {
+      const id = String((body as { id?: string }).id || url.searchParams.get("id") || "");
+      if (!id) return Response.json({ ok: false, error: "missing-id" }, { status: 400, headers: cors });
+      const order = findOrder(list, id) || null;
+      return Response.json({ ok: true, order }, { headers: cors });
+    }
+
+    if (op === "command") {
+      if (!isAdmin(req)) return Response.json({ ok: false, error: "unauthorized" }, { status: 401, headers: cors });
+      const id = String((body as { id?: string }).id || "");
+      const patch = (body as { patch?: DeskOrder }).patch || {};
+      const existing = findOrder(list, id);
+      if (!existing?.id) return Response.json({ ok: false, error: "not-found" }, { status: 404, headers: cors });
+      const nextOrder: DeskOrder = {
+        ...existing,
+        ...patch,
+        id: existing.id,
+        liveDraft: patch.paymentStatus === "paid" || patch.paymentStatus === "rejected" ? false : (patch.liveDraft ?? false),
+        reviewDeadline:
+          patch.paymentStatus === "paid" || patch.paymentStatus === "rejected" ? undefined : existing.reviewDeadline,
+        updatedAt: new Date().toISOString(),
+      };
+      const next = [nextOrder, ...list.filter((item) => item?.id !== existing.id)].slice(0, 80);
+      await store.setJSON("orders", next);
+      return Response.json({ ok: true, order: nextOrder }, { headers: cors });
+    }
 
     if (op === "replace") {
       if (!isAdmin(req)) return Response.json({ ok: false, error: "unauthorized" }, { status: 401, headers: cors });
@@ -61,21 +147,20 @@ export default async (req: Request) => {
       return Response.json({ ok: true, orders: next }, { headers: cors });
     }
 
-    if (op === "save" && (body as { order?: { id?: string } }).order?.id) {
-      const order = (body as { order: { id: string } }).order;
-      const current = (await store.get("orders", { type: "json" })) || [];
-      const list = Array.isArray(current) ? current : [];
-      const next = [order, ...list.filter((item: { id?: string }) => item?.id !== order.id)].slice(0, 80);
+    if (op === "save" && (body as { order?: DeskOrder }).order?.id) {
+      const incoming = (body as { order: DeskOrder }).order;
+      const existing = findOrder(list, incoming.id!);
+      const merged = mergeOrder(existing, incoming);
+      const next = [merged, ...list.filter((item) => item?.id !== merged.id)].slice(0, 80);
       await store.setJSON("orders", next);
-      return Response.json({ ok: true, id: order.id }, { headers: cors });
+      return Response.json({ ok: true, id: merged.id, order: merged }, { headers: cors });
     }
 
     if (!isAdmin(req)) {
       return Response.json({ ok: false, error: "unauthorized" }, { status: 401, headers: cors });
     }
 
-    const orders = (await store.get("orders", { type: "json" })) || [];
-    return Response.json({ ok: true, orders: Array.isArray(orders) ? orders : [] }, { headers: cors });
+    return Response.json({ ok: true, orders: list }, { headers: cors });
   } catch (error) {
     return Response.json(
       { ok: false, error: String((error as Error)?.message || error) },

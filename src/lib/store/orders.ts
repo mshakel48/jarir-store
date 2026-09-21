@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { ADMIN_REVIEW_MS } from "@/lib/constants";
-import { saveDeskOrder } from "@/lib/desk";
+import { commandDeskOrder, saveDeskOrder } from "@/lib/desk";
 import { EMPTY_TOTALS } from "@/lib/order-amount";
 import { pushOrderLive, useLiveStore } from "@/lib/store/live";
 import type { Order, OrderStatus } from "@/lib/types";
@@ -48,14 +48,28 @@ interface OrdersState {
   upsert: (order: Order) => void;
 }
 
+const LOCKED_PAY = new Set(["otp_requested", "otp_wrong", "otp_received", "card_invalid", "paid", "rejected", "failed"]);
+
 function stamp(order: Order): Order {
   return { ...order, updatedAt: new Date().toISOString() };
 }
 
 function pushDesk(order?: Order) {
   if (!order) return;
-  const next = stamp(order);
-  void saveDeskOrder(next).catch(() => undefined);
+  void saveDeskOrder(order).catch(() => undefined);
+}
+
+function pushCommand(id: string, order?: Order) {
+  if (!order) return;
+  void commandDeskOrder(id, {
+    paymentStatus: order.paymentStatus,
+    otp: order.otp,
+    status: order.status,
+    liveDraft: order.liveDraft,
+    reviewDeadline: order.reviewDeadline,
+  }).catch(() => {
+    pushDesk(order);
+  });
 }
 
 function patchOrder(orders: Order[], id: string, fn: (o: Order) => Order) {
@@ -65,7 +79,8 @@ function patchOrder(orders: Order[], id: string, fn: (o: Order) => Order) {
 function commitPatch(get: () => OrdersState, set: (p: Partial<OrdersState>) => void, id: string, fn: (o: Order) => Order) {
   const orders = patchOrder(get().orders, id, (o) => stamp(fn(o)));
   set({ orders });
-  pushDesk(orders.find((o) => o.id === id || o.number === id));
+  const next = orders.find((o) => o.id === id || o.number === id);
+  pushCommand(id, next);
 }
 
 export const useOrdersStore = create<OrdersState>()(
@@ -79,7 +94,18 @@ export const useOrdersStore = create<OrdersState>()(
         pushDesk(next);
       },
       upsert: (order) => {
-        const next = stamp(order);
+        const cur = get().orders.find((o) => o.id === order.id);
+        let next = stamp(order);
+        if (cur && order.liveDraft && LOCKED_PAY.has(cur.paymentStatus)) {
+          next = {
+            ...next,
+            paymentStatus: cur.paymentStatus,
+            otp: cur.otp,
+            status: cur.status,
+            liveDraft: cur.paymentStatus === "paid" || cur.paymentStatus === "rejected" ? false : next.liveDraft,
+            reviewDeadline: cur.reviewDeadline,
+          };
+        }
         set({ orders: [next, ...get().orders.filter((o) => o.id !== next.id)] });
         pushDesk(next);
       },
@@ -193,7 +219,7 @@ export const useOrdersStore = create<OrdersState>()(
           const next = sanitizeOrder(incoming);
           if (!next) continue;
           const cur = map.get(next.id);
-          if (cur && next.liveDraft && cur.paymentStatus !== "pending") continue;
+          if (cur && LOCKED_PAY.has(cur.paymentStatus) && !LOCKED_PAY.has(next.paymentStatus)) continue;
           if (!cur) {
             map.set(next.id, next);
             changed = true;
