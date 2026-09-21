@@ -3,6 +3,8 @@ import { getStore } from "@netlify/blobs";
 const ALLOWED_ORIGINS = new Set([
   "https://jarir.world",
   "https://www.jarir.world",
+  "https://jarironline.world",
+  "https://www.jarironline.world",
   "https://jarir-store.netlify.app",
 ]);
 

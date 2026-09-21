@@ -3,6 +3,8 @@ const UPSTREAM = "https://jarir-store.netlify.app/api/desk";
 const ALLOWED = new Set([
   "https://jarir.world",
   "https://www.jarir.world",
+  "https://jarironline.world",
+  "https://www.jarironline.world",
   "https://jarir-store.netlify.app",
 ]);
 
