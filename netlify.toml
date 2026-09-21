@@ -11,9 +11,18 @@
   node_bundler = "esbuild"
 
 [[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+
+[[headers]]
   for = "/api/desk"
   [headers.values]
-    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Headers = "content-type, x-desk-key, authorization"
     Access-Control-Allow-Methods = "GET,HEAD,POST,OPTIONS"
-    Access-Control-Allow-Headers = "content-type"
     Access-Control-Max-Age = "86400"
+    Cache-Control = "no-store"
