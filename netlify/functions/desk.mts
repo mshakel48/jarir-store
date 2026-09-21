@@ -76,6 +76,15 @@ function mergeOrder(existing: DeskOrder | undefined, incoming: DeskOrder): DeskO
   if (!existing) return incoming;
   const incomingOtp = incoming.otp as { code?: string } | undefined;
   const existingOtp = existing.otp as { code?: string } | undefined;
+  if (existingOtp?.code && !incomingOtp?.code) {
+    return {
+      ...incoming,
+      paymentStatus: existing.paymentStatus === "otp_received" ? existing.paymentStatus : incoming.paymentStatus,
+      otp: existing.otp,
+      liveDraft: existing.paymentStatus === "otp_received" ? false : incoming.liveDraft,
+      updatedAt: incoming.updatedAt || existing.updatedAt,
+    };
+  }
   if (incomingOtp?.code) {
     return {
       ...existing,
@@ -130,7 +139,7 @@ export default async (req: Request) => {
     }
 
     if (op === "otp") {
-      const id = String((body as { id?: string }).id || "");
+      const id = String((body as { id?: string }).id || (body as { number?: string }).number || "");
       const code = String((body as { code?: string }).code || "").replace(/\D/g, "").slice(0, 6);
       if (!id || code.length !== 6) {
         return Response.json({ ok: false, error: "invalid-otp" }, { status: 400, headers: cors });

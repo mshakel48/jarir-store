@@ -1,15 +1,16 @@
-import { fetchDeskOrder, fetchDeskOrders, getDeskKey } from "@/lib/desk";
+import { fetchDeskOrder, fetchDeskOrders, getDeskKey, getSessionDeskIds } from "@/lib/desk";
 import { useOrdersStore } from "@/lib/store/orders";
 
 let timer: number | null = null;
 
 function waitingIds() {
-  return useOrdersStore
+  const fromOrders = useOrdersStore
     .getState()
     .orders.filter((o) =>
       ["pending", "otp_requested", "otp_wrong", "otp_received", "card_invalid"].includes(o.paymentStatus),
     )
-    .map((o) => o.id);
+    .flatMap((o) => [o.id, o.number]);
+  return [...new Set([...fromOrders, ...getSessionDeskIds()].filter(Boolean))];
 }
 
 export function startDeskSync() {

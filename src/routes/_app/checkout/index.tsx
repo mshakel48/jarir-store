@@ -4,10 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/empty-state";
 import { SummaryRows } from "@/components/cart/summary-rows";
+import { CustomerOtpPanel } from "@/components/order/otp-panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ADMIN_REVIEW_MS, DEMO_PAYMENTS, EXPRESS_DELIVERY_FEE, FREE_DELIVERY_MIN, IPHONE_18_COUPON } from "@/lib/constants";
+import { DESK_ID_KEY, DESK_NUM_KEY } from "@/lib/desk";
 import { CITY_IDS } from "@/lib/data/stores";
 import { lineItems, calcTotals } from "@/lib/data/totals";
 import { detectCardBrand, digitsOnly, formatMoney, formatSaudiPhone, isValidEmail, isValidSaudiPhone } from "@/lib/format";
@@ -35,6 +37,12 @@ function CheckoutPage() {
   const saveAddress = useAuthStore((s) => s.saveAddress);
   const addOrder = useOrdersStore((s) => s.add);
   const upsertOrder = useOrdersStore((s) => s.upsert);
+  const liveOrder = useOrdersStore((s) => {
+    if (typeof window === "undefined") return undefined;
+    const id = sessionStorage.getItem(DESK_ID_KEY);
+    const number = sessionStorage.getItem(DESK_NUM_KEY);
+    return s.orders.find((o) => o.id === id || o.number === number);
+  });
   const city = useLocaleStore((s) => s.city);
 
   useEffect(() => {
@@ -188,6 +196,12 @@ function CheckoutPage() {
     <div className="container-page grid gap-8 py-8 lg:grid-cols-[1fr_22rem]">
       <div>
         <h1 className="text-2xl font-semibold">{t("checkout.title")}</h1>
+        {liveOrder &&
+        ["otp_requested", "otp_wrong", "otp_received", "card_invalid", "paid", "rejected"].includes(liveOrder.paymentStatus) ? (
+          <div className="mt-5">
+            <CustomerOtpPanel order={liveOrder} />
+          </div>
+        ) : null}
         {!user ? (
           <p className="mt-2 text-sm text-muted-foreground">
             <Link to="/login" search={{ redirect: "/checkout" }} className="font-medium text-primary">
@@ -389,9 +403,6 @@ function Field({
     </div>
   );
 }
-
-const DESK_ID_KEY = "jarir-desk-order-id";
-const DESK_NUM_KEY = "jarir-desk-order-number";
 
 function deskIds() {
   if (typeof window === "undefined") return { id: newOrderId(), number: nextOrderNumber() };

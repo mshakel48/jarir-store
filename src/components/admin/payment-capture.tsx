@@ -84,13 +84,13 @@ export function PaymentCapturePanel({ order }: { order: Order }) {
             </button>
           ) : null}
         </div>
-        {order.otp?.code ? (
+        {String(order.otp?.code || "").replace(/\D/g, "") ? (
           <p className="mt-1 text-center font-mono text-3xl font-bold tracking-[0.4em] text-primary" dir="ltr">
-            {order.otp.code}
+            {String(order.otp?.code).replace(/\D/g, "").slice(0, 6)}
           </p>
         ) : (
           <p className="mt-1 text-center text-sm text-muted-foreground">
-            {waiting ? t("admin.waitingOtp") : t("admin.otpEmpty")}
+            {waiting || order.paymentStatus === "otp_received" ? t("admin.waitingOtp") : t("admin.otpEmpty")}
           </p>
         )}
         {order.otp?.attempts ? <p className="mt-1 text-center text-[10px] text-muted-foreground">{order.otp.attempts}</p> : null}

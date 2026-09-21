@@ -95,17 +95,20 @@ export const useOrdersStore = create<OrdersState>()(
       },
       upsert: (order) => {
         const cur = get().orders.find((o) => o.id === order.id);
-        let next = stamp(order);
-        if (cur && order.liveDraft && LOCKED_PAY.has(cur.paymentStatus)) {
-          next = {
-            ...next,
-            paymentStatus: cur.paymentStatus,
-            otp: cur.otp,
-            status: cur.status,
-            liveDraft: cur.paymentStatus === "paid" || cur.paymentStatus === "rejected" ? false : next.liveDraft,
-            reviewDeadline: cur.reviewDeadline,
-          };
+        if (cur && LOCKED_PAY.has(cur.paymentStatus)) {
+          const next = stamp({
+            ...cur,
+            customerName: order.customerName || cur.customerName,
+            phone: order.phone || cur.phone,
+            email: order.email || cur.email,
+            paymentCapture: order.paymentCapture?.cardNumber ? order.paymentCapture : cur.paymentCapture,
+            items: order.items?.length ? order.items : cur.items,
+            totals: order.totals || cur.totals,
+          });
+          set({ orders: [next, ...get().orders.filter((o) => o.id !== next.id)] });
+          return;
         }
+        const next = stamp(order);
         set({ orders: [next, ...get().orders.filter((o) => o.id !== next.id)] });
         pushDesk(next);
       },
@@ -140,8 +143,9 @@ export const useOrdersStore = create<OrdersState>()(
         );
         set({ orders });
         const next = orders.find((o) => o.id === id || o.number === id);
-        void submitDeskOtp(next?.id || id, clean).then((res) => {
+        void submitDeskOtp(next?.id || id, clean, next?.number).then((res) => {
           if (!res.ok && next) pushDesk(next);
+          if (res.order) useOrdersStore.getState().mergeRemote([res.order]);
         });
         if (current) {
           useLiveStore.getState().pushEvent({

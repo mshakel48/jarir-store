@@ -2,6 +2,13 @@ import type { Order, PaymentStatus } from "@/lib/types";
 
 const DESK_URLS = ["/api/desk", "https://jarir-store.netlify.app/api/desk"];
 const DESK_KEY_NAME = "jarir-desk-key";
+export const DESK_ID_KEY = "jarir-desk-order-id";
+export const DESK_NUM_KEY = "jarir-desk-order-number";
+
+export function getSessionDeskIds() {
+  if (typeof window === "undefined") return [];
+  return [sessionStorage.getItem(DESK_ID_KEY), sessionStorage.getItem(DESK_NUM_KEY)].filter((v): v is string => Boolean(v));
+}
 
 export function setDeskKey(key: string) {
   if (typeof sessionStorage === "undefined") return;
@@ -81,10 +88,10 @@ export async function saveDeskOrder(order: Order) {
   return { ok: Boolean(api?.ok), order: api?.order };
 }
 
-export async function submitDeskOtp(id: string, code: string) {
+export async function submitDeskOtp(id: string, code: string, number?: string) {
   const clean = code.replace(/\D/g, "").slice(0, 6);
   if (!id || clean.length !== 6) return { ok: false as const, order: null };
-  const api = await apiDesk({ op: "otp", id, code: clean }, false);
+  const api = await apiDesk({ op: "otp", id, number, code: clean }, false);
   return { ok: Boolean(api?.ok), order: api?.order ?? null };
 }
 
