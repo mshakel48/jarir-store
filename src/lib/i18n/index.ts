@@ -1,6 +1,68 @@
-import { messages } from "@/lib/i18n/messages";
+import { messages as catalog } from "@/lib/i18n/messages";
 import { useLocaleStore } from "@/lib/store/locale";
 import type { Locale } from "@/lib/types";
+
+const kaAdmin: Record<string, string> = {
+  title: "ჯარირის მაღაზიის ადმინი",
+  dashboard: "მართვის პანელი",
+  products: "პროდუქტები",
+  categories: "კატეგორიები",
+  orders: "შეკვეთები",
+  customers: "კლიენტები",
+  inventory: "მარაგი",
+  coupons: "კუპონები",
+  discounts: "ფასდაკლებები",
+  reviews: "შეფასებები",
+  banners: "ბანერები",
+  stores: "ფილიალები",
+  payments: "გადახდები",
+  analytics: "ანალიტიკა",
+  groupMain: "მთავარი",
+  groupCatalog: "კატალოგი",
+  groupOps: "მაღაზიის მართვა",
+  groupFinance: "ფინანსები",
+  groupInsights: "ანგარიშები",
+  language: "ენა",
+  revenue: "შემოსავალი",
+  aov: "შეკვეთის საშუალო ღირებულება",
+  inStock: "მარაგშია",
+  low: "დაბალი",
+  out: "ამოიწურა",
+  pending: "მოლოდინში",
+  processing: "მუშავდება",
+  shipped: "გაგზავნილია",
+  delivered: "მიწოდებულია",
+  cancelled: "გაუქმებულია",
+  enabled: "ჩართული",
+  disabled: "გამორთული",
+  configured: "მორგებული",
+  demo: "დემო",
+  storefront: "მაღაზია",
+  live: "პირდაპირი",
+  onlineNow: "ახლა ონლაინ",
+  liveFeed: "ცოცხალი აქტივობა",
+  liveUsers: "მომხმარებლები ახლა",
+  liveCheckout: "გადახდის კლიენტები",
+  noCheckout: "გადახდაში კლიენტი არ არის",
+  enteringCard: "ბარათის შევსება",
+  incomingOrders: "შემოსული შეკვეთები",
+  orderDetails: "შეკვეთის დეტალები",
+};
+
+export const messages = {
+  ...catalog,
+  ka: {
+    ...catalog.en,
+    admin: {
+      ...catalog.en.admin,
+      ...kaAdmin,
+    },
+    common: {
+      ...catalog.en.common,
+      language: "ქართული",
+    },
+  },
+};
 
 function lookup(dict: unknown, path: string): string | undefined {
   const parts = path.split(".");
@@ -30,5 +92,6 @@ export function useT() {
     locale,
     dir: (locale === "ar" ? "rtl" : "ltr") as "rtl" | "ltr",
     isAr: locale === "ar",
+    isKa: locale === "ka",
   };
 }

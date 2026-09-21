@@ -16,7 +16,11 @@ export const useLocaleStore = create<LocaleState>()(
       locale: "ar",
       city: "riyadh",
       setLocale: (locale) => set({ locale }),
-      toggleLocale: () => set({ locale: get().locale === "ar" ? "en" : "ar" }),
+      toggleLocale: () => {
+        const order: Locale[] = ["ar", "en", "ka"];
+        const i = order.indexOf(get().locale);
+        set({ locale: order[(i + 1) % order.length] });
+      },
       setCity: (city) => set({ city }),
     }),
     { name: "jarir-locale" },
