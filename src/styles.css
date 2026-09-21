@@ -140,3 +140,13 @@
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+.admin-shell {
+  --color-background: #ece8e3;
+  --color-card: #f3efe9;
+  --color-muted: #e4dfd8;
+  --color-border: #d9d2c8;
+  --color-muted-foreground: #5c564e;
+  background-color: #ece8e3;
+  color: #1c1917;
+}
