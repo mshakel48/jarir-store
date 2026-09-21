@@ -49,18 +49,33 @@ const kaAdmin: Record<string, string> = {
   orderDetails: "შეკვეთის დეტალები",
 };
 
+const groupLabels = {
+  ar: {
+    groupMain: "الرئيسية",
+    groupCatalog: "الكتالوج",
+    groupOps: "إدارة المتجر",
+    groupFinance: "المالية",
+    groupInsights: "التقارير",
+    language: "اللغة",
+  },
+  en: {
+    groupMain: "Overview",
+    groupCatalog: "Catalog",
+    groupOps: "Store management",
+    groupFinance: "Finance",
+    groupInsights: "Reports",
+    language: "Language",
+  },
+};
+
 export const messages = {
   ...catalog,
+  ar: { ...catalog.ar, admin: { ...catalog.ar.admin, ...groupLabels.ar } },
+  en: { ...catalog.en, admin: { ...catalog.en.admin, ...groupLabels.en } },
   ka: {
     ...catalog.en,
-    admin: {
-      ...catalog.en.admin,
-      ...kaAdmin,
-    },
-    common: {
-      ...catalog.en.common,
-      language: "ქართული",
-    },
+    admin: { ...catalog.en.admin, ...kaAdmin },
+    common: { ...catalog.en.common, language: "ქართული" },
   },
 };
 
