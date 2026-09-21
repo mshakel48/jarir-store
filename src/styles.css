@@ -2,7 +2,7 @@
 @import "tw-animate-css";
 
 @theme {
-  --font-sans: "Cairo", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Cairo", "Noto Sans Georgian", ui-sans-serif, system-ui, sans-serif;
 
   --color-background: #ffffff;
   --color-foreground: #1c1917;

@@ -1,7 +1,7 @@
 import { IPHONE_18_DEAL_END, IPHONE_18_PRICE, TAMARA_PARTS } from "@/lib/constants";
 import { categoryShot, productImage } from "@/lib/data/images";
 import { discountPercent } from "@/lib/utils";
-import type { Product, Spec } from "@/lib/types";
+import type { Locale, Product, Spec } from "@/lib/types";
 
 function spec(label: string, arabicLabel: string, value: string, arabicValue = value): Spec {
   return { label, arabicLabel, value, arabicValue };
@@ -1027,10 +1027,10 @@ export function getProduct(id: string) {
   return PRODUCTS.find((p) => p.id === id);
 }
 
-export function productName(p: Product, locale: "ar" | "en") {
+export function productName(p: Product, locale: Locale) {
   return locale === "ar" ? p.arabicName : p.name;
 }
 
-export function productBrand(p: Product, locale: "ar" | "en") {
+export function productBrand(p: Product, locale: Locale) {
   return locale === "ar" ? p.arabicBrand : p.brand;
 }

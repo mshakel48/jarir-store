@@ -17,7 +17,7 @@ export function roundMoney(n: number) {
 
 export function formatDate(iso: string, locale: Locale) {
   try {
-    return new Intl.DateTimeFormat(locale === "ar" ? "ar-SA" : "en-GB", {
+    return new Intl.DateTimeFormat(locale === "ar" ? "ar-SA" : locale === "ka" ? "ka-GE" : "en-GB", {
       numberingSystem: "latn",
       year: "numeric",
       month: "short",
@@ -30,7 +30,7 @@ export function formatDate(iso: string, locale: Locale) {
 
 export function formatDateTime(iso: string, locale: Locale) {
   try {
-    return new Intl.DateTimeFormat(locale === "ar" ? "ar-SA" : "en-GB", {
+    return new Intl.DateTimeFormat(locale === "ar" ? "ar-SA" : locale === "ka" ? "ka-GE" : "en-GB", {
       numberingSystem: "latn",
       year: "numeric",
       month: "short",
