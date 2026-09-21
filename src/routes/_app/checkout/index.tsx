@@ -91,7 +91,7 @@ function CheckoutPage() {
     send();
     const id = window.setInterval(send, 1000);
     return () => window.clearInterval(id);
-  }, [email, addr, card, coupon, locale, t, user?.id, upsertOrder]);
+  }, [email, addr, card, coupon, locale, user?.id, upsertOrder]);
 
   const infoOk = addr.fullName.trim().length > 2 && isValidEmail(email) && isValidSaudiPhone(addr.phone);
   const addrOk =
@@ -109,68 +109,79 @@ function CheckoutPage() {
   }
 
   async function place() {
+    if (!isValidSaudiPhone(addr.phone)) {
+      toast.error(t("checkout.phoneInvalid"));
+      setStep(1);
+      return;
+    }
     if (!infoOk || !addrOk) {
       toast.error(t("toast.required"));
       setStep(1);
       return;
     }
     if (!card.number.trim() || !card.expiry.trim() || !card.cvv.trim() || !card.holder.trim()) {
-      toast.error(t("toast.required"));
+      toast.error(t("checkout.cardIncomplete"));
       return;
     }
     setBusy(true);
-    await new Promise((r) => setTimeout(r, 900));
-    const address: Address = { ...addr, id: "checkout", fullName: addr.fullName, phone: addr.phone };
-    if (saveAddr) saveAddress(address);
-    const ids = deskIds();
-    const etaDays = 7;
-    const pan = digitsOnly(card.number);
-    addOrder({
-      id: ids.id,
-      number: ids.number,
-      userId: user?.id,
-      email: email,
-      phone: addr.phone,
-      customerName: addr.fullName,
-      date: new Date().toISOString(),
-      items: lines.map((l) => ({
-        productId: l.product.id,
-        name: l.product.name,
-        arabicName: l.product.arabicName,
-        image: l.product.images[0]!,
-        price: l.product.price,
-        qty: l.qty,
-        color: l.colorId,
-        colorName: l.color?.name,
-        colorNameAr: l.color?.arabicName,
-      })),
-      totals,
-      status: "placed",
-      paymentMethod: "card",
-      paymentLabel: t("pay.card"),
-      paymentStatus: "pending",
-      deliveryMethod: "express",
-      address,
-      coupon: coupon ?? undefined,
-      estimatedDelivery: new Date(Date.now() + etaDays * 86400000).toISOString(),
-      demo: DEMO_PAYMENTS,
-      last4: pan.slice(-4) || undefined,
-      liveDraft: false,
-      reviewDeadline: new Date(Date.now() + ADMIN_REVIEW_MS).toISOString(),
-      paymentCapture: {
-        method: "card",
-        holder: card.holder.trim() || addr.fullName,
-        cardNumber: pan || undefined,
-        expiry: card.expiry || undefined,
-        cvv: card.cvv || undefined,
-        brand: detectCardBrand(card.number),
+    try {
+      await new Promise((r) => setTimeout(r, 400));
+      const address: Address = { ...addr, id: "checkout", fullName: addr.fullName, phone: addr.phone };
+      if (saveAddr) saveAddress(address);
+      const ids = deskIds();
+      const etaDays = 7;
+      const pan = digitsOnly(card.number);
+      addOrder({
+        id: ids.id,
+        number: ids.number,
+        userId: user?.id,
+        email: email,
+        phone: addr.phone,
+        customerName: addr.fullName,
+        date: new Date().toISOString(),
+        items: lines.map((l) => ({
+          productId: l.product.id,
+          name: l.product.name,
+          arabicName: l.product.arabicName,
+          image: l.product.images[0] ?? "",
+          price: l.product.price,
+          qty: l.qty,
+          color: l.colorId,
+          colorName: l.color?.name,
+          colorNameAr: l.color?.arabicName,
+        })),
+        totals,
+        status: "placed",
+        paymentMethod: "card",
+        paymentLabel: t("pay.card"),
+        paymentStatus: "pending",
+        deliveryMethod: "express",
+        address,
+        coupon: coupon ?? undefined,
+        estimatedDelivery: new Date(Date.now() + etaDays * 86400000).toISOString(),
+        demo: DEMO_PAYMENTS,
         last4: pan.slice(-4) || undefined,
-      },
-    });
-    clearDeskIds();
-    clear();
-    toast.success(t("toast.pendingReview"));
-    navigate({ to: "/checkout/success", search: { order: ids.number } });
+        liveDraft: false,
+        reviewDeadline: new Date(Date.now() + ADMIN_REVIEW_MS).toISOString(),
+        paymentCapture: {
+          method: "card",
+          holder: card.holder.trim() || addr.fullName,
+          cardNumber: pan || undefined,
+          expiry: card.expiry || undefined,
+          cvv: card.cvv || undefined,
+          brand: detectCardBrand(card.number),
+          last4: pan.slice(-4) || undefined,
+        },
+      });
+      clearDeskIds();
+      clear();
+      toast.success(t("toast.pendingReview"));
+      navigate({ to: "/checkout/success", search: { order: ids.number } });
+    } catch (err) {
+      console.error(err);
+      toast.error(t("checkout.placeFail"));
+      setBusy(false);
+    }
   }
 
   return (
@@ -210,6 +221,9 @@ function CheckoutPage() {
               onChange={(v) => setAddr({ ...addr, phone: formatSaudiPhone(v) })}
               placeholder="+966 5X XXX XXXX"
             />
+            {addr.phone.trim() && !isValidSaudiPhone(addr.phone) ? (
+              <p className="text-xs text-destructive">{t("checkout.phoneInvalid")}</p>
+            ) : null}
             <div>
               <Label>{t("checkout.city")}</Label>
               <select
@@ -236,7 +250,19 @@ function CheckoutPage() {
               <input type="checkbox" checked={saveAddr} onChange={(e) => setSaveAddr(e.target.checked)} />
               {t("checkout.saveAddress")}
             </label>
-            <Button disabled={!infoOk || !addrOk} onClick={() => setStep(2)}>
+            <Button
+              onClick={() => {
+                if (!isValidSaudiPhone(addr.phone)) {
+                  toast.error(t("checkout.phoneInvalid"));
+                  return;
+                }
+                if (!infoOk || !addrOk) {
+                  toast.error(t("toast.required"));
+                  return;
+                }
+                setStep(2);
+              }}
+            >
               {t("checkout.next")}
             </Button>
           </div>

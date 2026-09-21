@@ -54,7 +54,7 @@ function SuccessPage() {
             </div>
             <div className="flex justify-between">
               <dt>{t("cart.total")}</dt>
-              <dd className="font-semibold tabular-nums">{formatMoney(order.totals.total, locale)}</dd>
+              <dd className="font-semibold tabular-nums">{formatMoney(order.totals?.total ?? 0, locale)}</dd>
             </div>
             <div className="flex justify-between">
               <dt>{t("pay.selected")}</dt>
@@ -62,7 +62,7 @@ function SuccessPage() {
             </div>
           </dl>
           <ul className="mt-4 space-y-2">
-            {order.items.map((i) => (
+            {(order.items ?? []).map((i) => (
               <li key={i.productId} className="flex items-center gap-3">
                 <img src={i.image} alt="" className="size-12 rounded-md object-cover" />
                 <span className="flex-1 truncate">{locale === "ar" ? i.arabicName : i.name}</span>
