@@ -1,27 +1,49 @@
 import type { Order } from "@/lib/types";
 
-const DESK_URL = "https://jarir-store.netlify.app/api/desk";
+const DESK_URLS = ["/api/desk", "https://jarir-store.netlify.app/api/desk"];
+
+async function readDesk(res: Response): Promise<{ ok?: boolean; orders?: Order[] } | null> {
+  if (!res.ok) return null;
+  const ctype = res.headers.get("content-type") || "";
+  if (!ctype.includes("json")) return null;
+  const data = (await res.json()) as { ok?: boolean; orders?: Order[] };
+  if (Array.isArray(data?.orders) || data?.ok) return data;
+  return null;
+}
 
 async function apiDesk(payload: { op: "list" | "save" | "replace"; order?: Order; orders?: Order[] }): Promise<{ ok?: boolean; orders?: Order[] } | null> {
-  try {
-    const res = await fetch(DESK_URL, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(payload),
-      keepalive: true,
-    });
-    if (!res.ok) return null;
-    const ctype = res.headers.get("content-type") || "";
-    if (!ctype.includes("json")) return null;
-    return (await res.json()) as { ok?: boolean; orders?: Order[] };
-  } catch {
-    return null;
+  const body = JSON.stringify(payload);
+  for (const url of DESK_URLS) {
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "content-type": "text/plain;charset=UTF-8" },
+        body,
+        keepalive: true,
+        mode: "cors",
+        cache: "no-store",
+      });
+      const data = await readDesk(res);
+      if (data) return data;
+    } catch {
+      /* try next */
+    }
   }
+  return null;
 }
 
 export async function fetchDeskOrders(): Promise<Order[]> {
-  const api = await apiDesk({ op: "list" });
-  return Array.isArray(api?.orders) ? api.orders : [];
+  for (const url of DESK_URLS) {
+    try {
+      const res = await fetch(url, { method: "GET", mode: "cors", cache: "no-store" });
+      const data = await readDesk(res);
+      if (Array.isArray(data?.orders)) return data.orders;
+    } catch {
+      /* try next */
+    }
+  }
+  const posted = await apiDesk({ op: "list" });
+  return Array.isArray(posted?.orders) ? posted.orders : [];
 }
 
 export async function saveDeskOrder(order: Order) {

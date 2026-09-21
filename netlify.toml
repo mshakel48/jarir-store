@@ -9,3 +9,11 @@
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
+
+[[headers]]
+  for = "/api/desk"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET,HEAD,POST,OPTIONS"
+    Access-Control-Allow-Headers = "content-type"
+    Access-Control-Max-Age = "86400"
