@@ -59,9 +59,9 @@ function HomePage() {
               className="mt-8 mx-auto flex max-w-3xl flex-col items-center gap-5 md:flex-row md:items-center md:justify-center md:gap-10"
             >
               <img
-                src={deal.images[0]}
+                src="/images/heroes/iphone-18-pro.jpg"
                 alt={locale === "ar" ? deal.arabicName : deal.name}
-                className="h-56 w-56 rounded-2xl object-cover shadow-card md:h-72 md:w-72"
+                className="h-auto w-full max-w-3xl rounded-2xl bg-white object-contain"
               />
               <div className="flex flex-col items-center gap-3 text-center md:items-start md:text-start">
                 <p className="text-lg font-semibold">{locale === "ar" ? deal.arabicName : deal.name}</p>

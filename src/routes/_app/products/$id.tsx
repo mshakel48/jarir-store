@@ -78,7 +78,15 @@ function ProductPage() {
       <div className="mt-6 grid gap-8 lg:grid-cols-[1.1fr_1fr]">
         <div>
           <div className="overflow-hidden rounded-2xl border border-border bg-muted">
-            <img src={product.images[img] ?? product.images[0]} alt={productName(product, locale)} className="aspect-square w-full object-cover" />
+            <img
+              src={product.images[img] ?? product.images[0]}
+              alt={productName(product, locale)}
+              className={
+                product.id === "iphone-18" && img === 0
+                  ? "aspect-[21/9] w-full bg-white object-contain"
+                  : "aspect-square w-full object-cover"
+              }
+            />
           </div>
           <div className="mt-3 flex gap-2">
             {product.images.map((src, i) => (

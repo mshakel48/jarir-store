@@ -33,7 +33,11 @@ export function ProductCard({ product }: { product: Product }) {
           <img
             src={product.images[0]}
             alt={productName(product, locale)}
-            className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            className={
+              product.id === "iphone-18"
+                ? "size-full bg-white object-contain p-2"
+                : "size-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            }
             loading="lazy"
           />
         </Link>
@@ -108,7 +112,11 @@ export function ProductCard({ product }: { product: Product }) {
           <DialogTitle className="sr-only">{productName(product, locale)}</DialogTitle>
           <div className="grid gap-5 md:grid-cols-2">
             <div className="overflow-hidden rounded-xl bg-muted">
-              <img src={product.images[0]} alt="" className="aspect-square w-full object-cover" />
+              <img
+                src={product.images[0]}
+                alt=""
+                className={product.id === "iphone-18" ? "aspect-[21/9] w-full bg-white object-contain" : "aspect-square w-full object-cover"}
+              />
             </div>
             <div className="flex flex-col gap-3 pe-6">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
