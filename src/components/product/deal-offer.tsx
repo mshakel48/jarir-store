@@ -1,12 +1,9 @@
 import { Clock } from "lucide-react";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { IPHONE_18_COUPON, IPHONE_18_COUPON_PCT, IPHONE_18_SALE, TAMARA_PARTS } from "@/lib/constants";
+import { IPHONE_18_COUPON_PCT, IPHONE_18_SALE, TAMARA_PARTS } from "@/lib/constants";
 import { useCountdown, useHydrated } from "@/lib/hooks";
 import { formatMoney } from "@/lib/format";
 import { useT } from "@/lib/i18n";
 import { installmentAmount } from "@/lib/payments";
-import { useCartStore } from "@/lib/store/cart";
 import type { Product } from "@/lib/types";
 
 export function isDealLive(product: Product) {
@@ -39,8 +36,6 @@ export function DealCountdown({ endAt, compact }: { endAt: string; compact?: boo
 
 export function BnplOffer({ product }: { product: Product }) {
   const { t, locale } = useT();
-  const applyCoupon = useCartStore((s) => s.applyCoupon);
-  const coupon = useCartStore((s) => s.coupon);
   const parts = product.installmentParts || TAMARA_PARTS;
   const isIphone = product.id === "iphone-18";
   const sale = isIphone ? IPHONE_18_SALE : product.price;
@@ -62,27 +57,6 @@ export function BnplOffer({ product }: { product: Product }) {
           <p className="text-xs text-muted-foreground">
             {parts} × {formatMoney(per, locale)} = {formatMoney(sale, locale)}
           </p>
-          <div className="flex flex-wrap items-center gap-2">
-            <code className="rounded-md bg-card px-2 py-1 font-mono text-sm font-semibold tracking-wide">{IPHONE_18_COUPON}</code>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                void navigator.clipboard.writeText(IPHONE_18_COUPON);
-                toast.success(t("admin.copied"));
-              }}
-            >
-              {t("product.copyCode")}
-            </Button>
-            {coupon !== IPHONE_18_COUPON ? (
-              <Button type="button" size="sm" onClick={() => applyCoupon(IPHONE_18_COUPON)}>
-                {t("cart.apply")}
-              </Button>
-            ) : (
-              <span className="text-xs text-success">{t("cart.couponOk")}</span>
-            )}
-          </div>
         </>
       ) : (
         <>

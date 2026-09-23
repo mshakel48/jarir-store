@@ -107,9 +107,6 @@ function CartPage() {
           {remain > 0 ? t("cart.freeShip", { n: Math.ceil(remain) }) : t("cart.freeUnlocked")}
         </p>
         <SummaryRows totals={totals} locale={locale} t={t} showTamara={tamaraDeal} />
-        {hasIphone && coupon !== IPHONE_18_COUPON ? (
-          <p className="mt-3 text-xs text-primary">{t("cart.couponHint", { code: IPHONE_18_COUPON })}</p>
-        ) : null}
         <form
           className="mt-4 flex gap-2"
           onSubmit={(e) => {
