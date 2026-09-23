@@ -28,7 +28,7 @@ export function ProductCard({ product }: { product: Product }) {
 
   return (
     <article className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)] transition-[transform,box-shadow] duration-200 ease-[var(--ease-out-soft)] hover:-translate-y-0.5 hover:shadow-[var(--shadow-lift)]">
-      <div className="relative aspect-square overflow-hidden bg-muted">
+      <div className={product.id === "iphone-18" ? "relative aspect-[12/5] overflow-hidden bg-white" : "relative aspect-square overflow-hidden bg-muted"}>
         <Link to="/products/$id" params={{ id: product.id }} className="block size-full">
           <img
             src={product.images[0]}
@@ -115,7 +115,7 @@ export function ProductCard({ product }: { product: Product }) {
               <img
                 src={product.images[0]}
                 alt=""
-                className={product.id === "iphone-18" ? "aspect-[21/9] w-full bg-white object-contain" : "aspect-square w-full object-cover"}
+                className={product.id === "iphone-18" ? "aspect-[12/5] w-full bg-white object-contain" : "aspect-square w-full object-cover"}
               />
             </div>
             <div className="flex flex-col gap-3 pe-6">

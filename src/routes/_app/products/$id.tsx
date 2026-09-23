@@ -83,7 +83,7 @@ function ProductPage() {
               alt={productName(product, locale)}
               className={
                 product.id === "iphone-18" && img === 0
-                  ? "aspect-[21/9] w-full bg-white object-contain"
+                  ? "aspect-[12/5] w-full bg-white object-contain"
                   : "aspect-square w-full object-cover"
               }
             />

@@ -53,18 +53,13 @@ function HomePage() {
           </div>
           <h1 className="text-center text-3xl font-extrabold tracking-tight md:text-5xl">{t("home.promoTitle")}</h1>
           {deal ? (
-            <Link
-              to="/products/$id"
-              params={{ id: deal.id }}
-              className="mt-8 mx-auto flex max-w-3xl flex-col items-center gap-5 md:flex-row md:items-center md:justify-center md:gap-10"
-            >
+            <Link to="/products/$id" params={{ id: deal.id }} className="mt-6 block">
               <img
                 src="/images/heroes/iphone-18-pro.jpg"
                 alt={locale === "ar" ? deal.arabicName : deal.name}
-                className="h-auto w-full max-w-3xl rounded-2xl bg-white object-contain"
+                className="mx-auto h-auto w-full max-w-5xl object-contain"
               />
-              <div className="flex flex-col items-center gap-3 text-center md:items-start md:text-start">
-                <p className="text-lg font-semibold">{locale === "ar" ? deal.arabicName : deal.name}</p>
+              <div className="mt-4 flex flex-col items-center gap-3 text-center">
                 <p className="flex items-baseline gap-2 font-extrabold">
                   <span className="text-xl text-muted-foreground line-through decoration-2">
                     {formatMoney(deal.price, locale)}
